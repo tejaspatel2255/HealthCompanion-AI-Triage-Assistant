@@ -14,9 +14,9 @@ Request/Response Flow:
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from groq import Groq
+from openai import OpenAI
 
-from app.config import GROQ_API_KEY, ALLOWED_ORIGIN
+from app.config import OPENROUTER_API_KEY, OPENROUTER_MODEL, ALLOWED_ORIGIN
 from app.models import ChatRequest, ChatResponse
 
 app = FastAPI(
@@ -34,8 +34,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Groq client
-client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+# Initialize OpenRouter client
+client = None
+if OPENROUTER_API_KEY:
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=OPENROUTER_API_KEY,
+        default_headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "HTTP-Referer": "https://health-companion.local",  # Required by OpenRouter API rules
+            "X-Title": "HealthCompanion AI",
+        }
+    )
 
 SYSTEM_PROMPT = (
     "You are HealthCompanion, an AI-powered educational health triage assistant.\n"
@@ -100,15 +110,15 @@ def chat(request: ChatRequest):
             detail="Message exceeds the maximum limit of 1000 characters."
         )
 
-    if not GROQ_API_KEY or not client:
+    if not OPENROUTER_API_KEY or not client:
         raise HTTPException(
             status_code=500,
-            detail="Groq client is not initialized. Please set the GROQ_API_KEY environment variable."
+            detail="OpenRouter client is not initialized. Please check your environment variables."
         )
     
     try:
         completion = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model=OPENROUTER_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": message_text}
@@ -127,7 +137,7 @@ def chat(request: ChatRequest):
         )
         
     except Exception as e:
-        print(f"Error communicating with Groq API: {str(e)}")
+        print(f"Error communicating with OpenRouter API: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while communicating with the AI service: {str(e)}"
