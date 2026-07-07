@@ -16,7 +16,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 
-from app.config import GROQ_API_KEY
+from app.config import GROQ_API_KEY, ALLOWED_ORIGIN
 from app.models import ChatRequest, ChatResponse
 
 app = FastAPI(
@@ -25,10 +25,10 @@ app = FastAPI(
     version="0.2.0"
 )
 
-# Enable CORS for frontend development
+# Enable CORS for frontend requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # To be restricted for production later
+    allow_origins=[ALLOWED_ORIGIN] if ALLOWED_ORIGIN else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

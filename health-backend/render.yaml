@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: health-companion-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false # Must be supplied manually via the Render dashboard
+      - key: ALLOWED_ORIGIN
+        value: "*" # Can be restricted to the Vercel URL later
