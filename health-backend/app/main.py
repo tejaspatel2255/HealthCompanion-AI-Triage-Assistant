@@ -13,12 +13,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 
-from app.config import GROQ_API_KEY, ALLOWED_ORIGIN
+from app.config import GROQ_API_KEY, GROQ_MODEL, ALLOWED_ORIGIN
 from app.models import ChatRequest, ChatResponse
 
 # Configure structured logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("healthcompanion")
+
+# Groq Model Configuration
+# Check active models: https://console.groq.com/docs/models
+# Check deprecations: https://console.groq.com/docs/deprecations
+MODEL_NAME = GROQ_MODEL
 
 app = FastAPI(
     title="HealthCompanion API",
@@ -121,7 +126,7 @@ def chat(request: ChatRequest):
     # 3. Call Groq Completion
     try:
         completion = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": message_text}
@@ -148,7 +153,10 @@ def chat(request: ChatRequest):
         detail_msg = f"An error occurred while communicating with the AI service: {error_msg}"
         
         # 5. Classify the exception details for refined error presentation
-        if "401" in error_msg or "unauthorized" in error_msg.lower() or "api key" in error_msg.lower() or "authentication" in error_msg.lower():
+        if "model_decommissioned" in error_msg.lower() or "decommissioned" in error_msg.lower():
+            status_code = 400
+            detail_msg = "The AI model is temporarily unavailable — please try again shortly."
+        elif "401" in error_msg or "unauthorized" in error_msg.lower() or "api key" in error_msg.lower() or "authentication" in error_msg.lower():
             status_code = 401
             detail_msg = "Authentication/Configuration Error: The Groq API key is invalid, missing, or unauthorized. Please verify your local .env file key value."
         elif "429" in error_msg or "rate limit" in error_msg.lower():
