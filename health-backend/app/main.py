@@ -1,28 +1,29 @@
 """
-HealthCompanion Backend Main Application
+HealthCompanion Backend Main Application (Groq SDK Version)
 
 Request/Response Flow:
-1. Client sends a JSON POST request to /chat containing the user's message (ChatRequest).
-2. The server wraps the message with a system prompt specifying HealthCompanion's educational role,
-   necessary guidelines, disclaimer, and severity requirements.
-3. The server forwards the conversation to the Groq API (using Llama 3).
-4. The server receives the completion, extracts the reply, and parses it to determine severity level
-   (Emergency, Doctor, or Self-care).
-5. The severity level is mapped to a corresponding status indicator icon (🔴, 🟡, 🟢).
-6. The server returns a structured ChatResponse JSON back to the client.
+1. Client sends a JSON POST request to /chat containing the user's message.
+2. Server validates the input and forwards the prompt to the official Groq API endpoint.
+3. Server parses the completion to determine severity levels and status icons.
+4. Server returns a structured ChatResponse JSON back to the client.
 """
 
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAI
+from groq import Groq
 
-from app.config import OPENROUTER_API_KEY, OPENROUTER_MODEL, ALLOWED_ORIGIN
+from app.config import GROQ_API_KEY, ALLOWED_ORIGIN
 from app.models import ChatRequest, ChatResponse
+
+# Configure structured logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("healthcompanion")
 
 app = FastAPI(
     title="HealthCompanion API",
     description="Educational AI-powered health triage companion backend",
-    version="0.2.0"
+    version="0.3.1"
 )
 
 # Enable CORS for frontend requests
@@ -34,18 +35,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize OpenRouter client
+# Startup validation checks for GROQ_API_KEY (Step 2)
+if not GROQ_API_KEY:
+    logger.warning("⚠️ WARNING: GROQ_API_KEY is not set or is empty in .env. Triage chat requests will fail.")
+else:
+    logger.info("✅ GROQ_API_KEY configuration detected. Key length: %d characters.", len(GROQ_API_KEY))
+
+# Initialize Groq client with no base_url overrides (Steps 3 & 4)
 client = None
-if OPENROUTER_API_KEY:
-    client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=OPENROUTER_API_KEY,
-        default_headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "HTTP-Referer": "https://health-companion.local",  # Required by OpenRouter API rules
-            "X-Title": "HealthCompanion AI",
-        }
-    )
+if GROQ_API_KEY:
+    try:
+        client = Groq(api_key=GROQ_API_KEY)
+    except Exception as e:
+        logger.error("❌ Failed to initialize Groq client: %s", str(e))
 
 SYSTEM_PROMPT = (
     "You are HealthCompanion, an AI-powered educational health triage assistant.\n"
@@ -68,7 +70,7 @@ def parse_severity(reply: str) -> tuple[str, str]:
     """
     reply_upper = reply.upper()
     
-    # 1. Check for explicit severity tag patterns
+    # Check for explicit severity tag patterns
     if "SEVERITY: EMERGENCY" in reply_upper or "SEVERITY:EMERGENCY" in reply_upper:
         return "Emergency", "🔴"
     elif "SEVERITY: DOCTOR" in reply_upper or "SEVERITY:DOCTOR" in reply_upper:
@@ -76,13 +78,12 @@ def parse_severity(reply: str) -> tuple[str, str]:
     elif "SEVERITY: SELF-CARE" in reply_upper or "SEVERITY:SELF-CARE" in reply_upper or "SEVERITY: SELF CARE" in reply_upper:
         return "Self-care", "🟢"
     
-    # 2. Fallback check for keywords anywhere in the message
+    # Fallback check for keywords anywhere in the message
     if "EMERGENCY" in reply_upper:
         return "Emergency", "🔴"
     elif "DOCTOR" in reply_upper or "PHYSICIAN" in reply_upper or "CLINICAL" in reply_upper:
         return "Doctor", "🟡"
         
-    # Default fallback
     return "Self-care", "🟢"
 
 @app.get("/")
@@ -96,7 +97,7 @@ def chat(request: ChatRequest):
     Handles triage chat messages, interacts with Groq Llama 3 model,
     parses the response for severity, and returns the response metadata.
     """
-    # Validate input content
+    # 1. Validate input content
     message_text = request.message.strip() if request.message else ""
     if not message_text:
         raise HTTPException(
@@ -110,15 +111,17 @@ def chat(request: ChatRequest):
             detail="Message exceeds the maximum limit of 1000 characters."
         )
 
-    if not OPENROUTER_API_KEY or not client:
+    # 2. Check client initialization
+    if not GROQ_API_KEY or not client:
         raise HTTPException(
             status_code=500,
-            detail="OpenRouter client is not initialized. Please check your environment variables."
+            detail="Groq client is not initialized. Please ensure a valid GROQ_API_KEY is set in your .env file."
         )
     
+    # 3. Call Groq Completion
     try:
         completion = client.chat.completions.create(
-            model=OPENROUTER_MODEL,
+            model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": message_text}
@@ -137,8 +140,28 @@ def chat(request: ChatRequest):
         )
         
     except Exception as e:
-        print(f"Error communicating with OpenRouter API: {str(e)}")
+        error_msg = str(e)
+        logger.error(f"Error calling Groq service: {error_msg}")
+        
+        # Default error values
+        status_code = 500
+        detail_msg = f"An error occurred while communicating with the AI service: {error_msg}"
+        
+        # 5. Classify the exception details for refined error presentation
+        if "401" in error_msg or "unauthorized" in error_msg.lower() or "api key" in error_msg.lower() or "authentication" in error_msg.lower():
+            status_code = 401
+            detail_msg = "Authentication/Configuration Error: The Groq API key is invalid, missing, or unauthorized. Please verify your local .env file key value."
+        elif "429" in error_msg or "rate limit" in error_msg.lower():
+            status_code = 429
+            detail_msg = "Model Error (Rate Limit): The Groq API rate limit has been exceeded. Please retry your request in a moment."
+        elif "connection" in error_msg.lower() or "unreachable" in error_msg.lower() or "timeout" in error_msg.lower() or "api.groq.com" in error_msg.lower():
+            status_code = 502
+            detail_msg = "Network Error: Unable to connect to the Groq server. Please check your internet connection."
+        elif "model" in error_msg.lower() or "400" in error_msg or "bad request" in error_msg.lower():
+            status_code = 400
+            detail_msg = f"Model Configuration Error: The request payload or model identifier is invalid. Details: {error_msg}"
+            
         raise HTTPException(
-            status_code=500,
-            detail=f"An error occurred while communicating with the AI service: {str(e)}"
+            status_code=status_code,
+            detail=detail_msg
         )
