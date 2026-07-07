@@ -1,18 +1,24 @@
 """
-HealthCompanion Backend Main Application (Groq SDK Version)
+HealthCompanion Backend Main Application (Groq SDK Version with JSON Mode & Rate Limiter)
 
 Request/Response Flow:
-1. Client sends a JSON POST request to /chat containing the user's message, optional history, and optional vitals.
-2. Server validates the input and forwards the prompt with full history to the official Groq API endpoint.
-3. Server parses the completion to determine severity levels (only if the model outputs SEVERITY:).
-4. Server returns a structured ChatResponse JSON back to the client.
+1. Rate limit check is executed by slowapi. If exceeded, returns a customized 429 JSON response.
+2. Client sends user message, history, and optional vitals.
+3. Server submits messages to Groq with response_format={"type": "json_object"} to guarantee JSON output.
+4. Server parses the JSON content and maps details to ChatResponse, calculating severities and icons.
 """
 
+import json
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from groq import Groq
 from typing import Optional, List, Dict
+
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.config import GROQ_API_KEY, GROQ_MODEL, ALLOWED_ORIGIN
 from app.models import ChatRequest, ChatResponse
@@ -21,16 +27,25 @@ from app.models import ChatRequest, ChatResponse
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("healthcompanion")
 
-# Groq Model Configuration
-# Check active models: https://console.groq.com/docs/models
-# Check deprecations: https://console.groq.com/docs/deprecations
 MODEL_NAME = GROQ_MODEL
+
+# Instantiate Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="HealthCompanion API",
     description="Educational AI-powered health triage companion backend",
-    version="0.4.0"
+    version="0.5.0"
 )
+app.state.limiter = limiter
+
+# Rate limit custom error handler (429 Status)
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_custom_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "You're sending messages too quickly — please wait a moment."}
+    )
 
 # Enable CORS for frontend requests
 app.add_middleware(
@@ -58,35 +73,22 @@ if GROQ_API_KEY:
 SYSTEM_PROMPT = (
     "You are HealthCompanion, an AI-powered educational health triage assistant.\n"
     "Your goal is to help users understand general health concerns and explore potential causes. "
-    "Please follow these instructions strictly:\n"
-    "1. Be empathetic, objective, and clear.\n"
-    "2. If the user's description of their symptoms is too vague (e.g. lacks duration, severity, exact description) to make a safe, educational triage assessment, you MUST ask 1 or 2 clarifying questions first.\n"
-    "3. Under no circumstances should you output a 'SEVERITY:' classification line if you are asking clarifying questions. Only include the 'SEVERITY:' tag when you are providing your final triage advice.\n"
-    "4. Provide possible general causes for the symptoms described, but frame them strictly as possibilities, not diagnoses.\n"
-    "5. You MUST include the following disclaimer verbatim in your response: "
+    "You MUST respond ONLY with a single valid JSON object. Do not wrap it in markdown block quotes or include leading/trailing text. "
+    "The JSON object must match this schema:\n"
+    "{\n"
+    "  \"reply\": \"<conversational text shown to the user, including empathy, general observations, and clarifying questions if you need more details>\",\n"
+    "  \"possible_causes\": [\"<possible educational cause 1>\", \"<possible educational cause 2>\", ...],\n"
+    "  \"severity\": \"self-care\" | \"doctor\" | \"emergency\" | \"clarifying\",\n"
+    "  \"recommended_action\": \"<one short, clear educational next-step sentence>\",\n"
+    "  \"red_flags\": [\"<concerning red-flag symptoms the user should watch for or seek urgent care for>\"]\n"
+    "}\n\n"
+    "Rules:\n"
+    "1. Use \"clarifying\" as the severity value if the user's description is too vague to safely triage and you are asking clarifying questions.\n"
+    "2. If you have enough detail, use \"self-care\", \"doctor\", or \"emergency\".\n"
+    "3. You MUST include this disclaimer verbatim in your \"reply\" content: "
     "'I am an AI assistant, not a doctor. Please consult a healthcare professional for proper medical advice.'\n"
-    "6. When you are ready to issue the final triage advice, you MUST conclude your response with a dedicated severity classification line. The line must start exactly with "
-    "'SEVERITY: ' followed by one of these three values: 'Self-care', 'Doctor', or 'Emergency'.\n"
-    "Example of ending line: 'SEVERITY: Doctor'"
+    "4. Do not offer formal medical diagnosis. Frame causes strictly as possibilities."
 )
-
-def parse_severity(reply: str) -> tuple[Optional[str], Optional[str]]:
-    """
-    Parses the response from the LLM to identify the severity category.
-    Returns a tuple of (severity_text, icon_emoji) if a SEVERITY line is found, otherwise (None, None).
-    """
-    reply_upper = reply.upper()
-    
-    # Check for explicit severity tag patterns
-    if "SEVERITY: EMERGENCY" in reply_upper or "SEVERITY:EMERGENCY" in reply_upper:
-        return "Emergency", "🔴"
-    elif "SEVERITY: DOCTOR" in reply_upper or "SEVERITY:DOCTOR" in reply_upper:
-        return "Doctor", "🟡"
-    elif "SEVERITY: SELF-CARE" in reply_upper or "SEVERITY:SELF-CARE" in reply_upper or "SEVERITY: SELF CARE" in reply_upper:
-        return "Self-care", "🟢"
-    
-    # Do not perform keyword fallback so we don't show badges on clarifying questions
-    return None, None
 
 @app.get("/")
 def read_root():
@@ -94,13 +96,14 @@ def read_root():
     return {"message": "HealthCompanion API is running!"}
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest):
+@limiter.limit("15/minute")
+def chat(chat_payload: ChatRequest, request: Request):
     """
-    Handles triage chat messages, interacts with Groq model,
-    parses the response for severity, and returns the response metadata.
+    Handles triage chat messages, interacts with Groq model using JSON mode,
+    parses the structured response, and enforces client rate limits.
     """
     # 1. Validate input content
-    message_text = request.message.strip() if request.message else ""
+    message_text = chat_payload.message.strip() if chat_payload.message else ""
     if not message_text:
         raise HTTPException(
             status_code=400,
@@ -120,25 +123,23 @@ def chat(request: ChatRequest):
             detail="Groq client is not initialized. Please ensure a valid GROQ_API_KEY is set in your .env file."
         )
     
-    # 3. Call Groq Completion with history and vitals
+    # 3. Call Groq Completion with JSON mode enabled
     try:
-        # Build messages payload including system instructions and history
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         
-        if request.history:
-            for msg in request.history:
+        if chat_payload.history:
+            for msg in chat_payload.history:
                 role = msg.get("role", "user")
                 content = msg.get("content", "")
                 if role in ["user", "assistant"] and content:
                     messages.append({"role": role, "content": content})
                     
-        # Fold vitals into the current user prompt if supplied
         current_content = message_text
-        if request.vitals:
+        if chat_payload.vitals:
             vitals_info = []
-            temp = request.vitals.get("temperature")
-            bp = request.vitals.get("bloodPressure")
-            pulse = request.vitals.get("pulse")
+            temp = chat_payload.vitals.get("temperature")
+            bp = chat_payload.vitals.get("bloodPressure")
+            pulse = chat_payload.vitals.get("pulse")
             if temp:
                 vitals_info.append(f"Temperature: {temp}°F")
             if bp:
@@ -154,17 +155,56 @@ def chat(request: ChatRequest):
         completion = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
+            response_format={"type": "json_object"},
             temperature=0.5,
             max_tokens=1024,
         )
         
         reply_content = completion.choices[0].message.content
-        severity, icon = parse_severity(reply_content)
         
+        # 4. Safe JSON parsing fallback block
+        try:
+            parsed_data = json.loads(reply_content)
+        except Exception as json_err:
+            logger.warning(f"Failed to parse JSON reply from Groq model: {json_err}. Raw reply: {reply_content}")
+            parsed_data = {
+                "reply": reply_content,
+                "possible_causes": [],
+                "severity": "self-care",
+                "recommended_action": "Please monitor your symptoms closely.",
+                "red_flags": []
+            }
+
+        # Normalize severity value
+        severity_val = str(parsed_data.get("severity", "self-care")).lower().strip()
+        if severity_val not in ["self-care", "doctor", "emergency", "clarifying"]:
+            severity_val = "self-care"
+
+        # Compute severity icon
+        icon_map = {
+            "self-care": "🟢",
+            "doctor": "🟡",
+            "emergency": "🔴",
+            "clarifying": "⚪"
+        }
+        icon_val = icon_map[severity_val]
+
+        # Normalize severity casing for display
+        severity_display_map = {
+            "self-care": "Self-care",
+            "doctor": "Doctor",
+            "emergency": "Emergency",
+            "clarifying": "Clarifying"
+        }
+        severity_display = severity_display_map[severity_val]
+
         return ChatResponse(
-            reply=reply_content,
-            severity=severity,
-            icon=icon
+            reply=parsed_data.get("reply", ""),
+            possible_causes=parsed_data.get("possible_causes", []),
+            severity=severity_display,
+            recommended_action=parsed_data.get("recommended_action", ""),
+            red_flags=parsed_data.get("red_flags", []),
+            icon=icon_val
         )
         
     except Exception as e:

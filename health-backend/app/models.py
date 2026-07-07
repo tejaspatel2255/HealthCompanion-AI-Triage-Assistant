@@ -8,5 +8,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
-    severity: Optional[str] = None
+    possible_causes: Optional[List[str]] = None
+    severity: str
+    recommended_action: Optional[str] = None
+    red_flags: Optional[List[str]] = None
     icon: Optional[str] = None

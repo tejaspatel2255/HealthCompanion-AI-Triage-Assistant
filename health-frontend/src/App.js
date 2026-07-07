@@ -162,7 +162,10 @@ function App() {
         id: Date.now() + 1,
         sender: 'assistant',
         text: data.reply,
+        possible_causes: data.possible_causes || [],
         severity: data.severity || null, // Optional severity classification
+        recommended_action: data.recommended_action || '',
+        red_flags: data.red_flags || [],
         icon: data.icon || null,
       };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -179,10 +182,15 @@ function App() {
       }
       setErrorBanner(bannerMsg);
       
+      let friendlyText = `I'm having trouble getting a response from the backend: ${error.message || 'Please try again shortly.'}`;
+      if (error.message && error.message.includes("sending messages too quickly")) {
+        friendlyText = error.message;
+      }
+
       const errorMessage = {
         id: Date.now() + 1,
         sender: 'assistant',
-        text: `I'm having trouble getting a response from the backend: ${error.message || 'Please try again shortly.'}`,
+        text: friendlyText,
         severity: 'Error',
         icon: '⚠️',
       };
@@ -264,10 +272,20 @@ function App() {
       const splitText = doc.splitTextToSize(msg.text, 170);
       
       // Calculate dynamic block height
-      // 5pt (role) + 4pt (space) + (lines * 5pt) + (severity ? 8pt : 0) + 12pt (space + divider)
       let blockHeight = 5 + 4 + (splitText.length * 5);
-      if (!isUser && msg.severity) {
-        blockHeight += 8;
+      if (!isUser) {
+        if (msg.possible_causes && msg.possible_causes.length > 0) {
+          blockHeight += 6 + (msg.possible_causes.length * 4);
+        }
+        if (msg.red_flags && msg.red_flags.length > 0) {
+          blockHeight += 6 + (msg.red_flags.length * 4);
+        }
+        if (msg.recommended_action) {
+          blockHeight += 6;
+        }
+        if (msg.severity && msg.severity.toLowerCase() !== 'clarifying') {
+          blockHeight += 8;
+        }
       }
       blockHeight += 12;
       
@@ -296,9 +314,55 @@ function App() {
         doc.text(line, 20, yOffset);
         yOffset += 5;
       });
+
+      // Potential Causes (PDF Layout)
+      if (!isUser && msg.possible_causes && msg.possible_causes.length > 0) {
+        yOffset += 2;
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        doc.text("Potential Causes:", 20, yOffset);
+        yOffset += 4;
+        
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139);
+        msg.possible_causes.forEach((cause) => {
+          doc.text(`• ${cause}`, 24, yOffset);
+          yOffset += 4;
+        });
+      }
+
+      // Red Flags (PDF Layout)
+      if (!isUser && msg.red_flags && msg.red_flags.length > 0) {
+        yOffset += 2;
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(220, 38, 38);
+        doc.text("Red Flags to Watch For:", 20, yOffset);
+        yOffset += 4;
+        
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(220, 38, 38);
+        msg.red_flags.forEach((flag) => {
+          doc.text(`• ${flag}`, 24, yOffset);
+          yOffset += 4;
+        });
+      }
+
+      // Recommended Action (PDF Layout)
+      if (!isUser && msg.recommended_action) {
+        yOffset += 2;
+        doc.setFont("Helvetica", "italic");
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        doc.text(`Recommended Action: ${msg.recommended_action}`, 20, yOffset);
+        yOffset += 4;
+      }
       
-      // 3. Draw Severity Badge (Only for assistant messages, colored rect + white text)
-      if (!isUser && msg.severity) {
+      // 3. Draw Severity Badge (Only for assistant messages, ignoring clarifying)
+      if (!isUser && msg.severity && msg.severity.toLowerCase() !== 'clarifying') {
         yOffset += 2;
         let badgeText = "";
         let badgeColor = [0, 0, 0];
