@@ -2,9 +2,9 @@
 HealthCompanion Backend Main Application (Groq SDK Version)
 
 Request/Response Flow:
-1. Client sends a JSON POST request to /chat containing the user's message.
-2. Server validates the input and forwards the prompt to the official Groq API endpoint.
-3. Server parses the completion to determine severity levels and status icons.
+1. Client sends a JSON POST request to /chat containing the user's message, optional history, and optional vitals.
+2. Server validates the input and forwards the prompt with full history to the official Groq API endpoint.
+3. Server parses the completion to determine severity levels (only if the model outputs SEVERITY:).
 4. Server returns a structured ChatResponse JSON back to the client.
 """
 
@@ -12,6 +12,7 @@ import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
+from typing import Optional, List, Dict
 
 from app.config import GROQ_API_KEY, GROQ_MODEL, ALLOWED_ORIGIN
 from app.models import ChatRequest, ChatResponse
@@ -28,7 +29,7 @@ MODEL_NAME = GROQ_MODEL
 app = FastAPI(
     title="HealthCompanion API",
     description="Educational AI-powered health triage companion backend",
-    version="0.3.1"
+    version="0.4.0"
 )
 
 # Enable CORS for frontend requests
@@ -40,13 +41,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Startup validation checks for GROQ_API_KEY (Step 2)
+# Startup validation checks for GROQ_API_KEY
 if not GROQ_API_KEY:
     logger.warning("⚠️ WARNING: GROQ_API_KEY is not set or is empty in .env. Triage chat requests will fail.")
 else:
     logger.info("✅ GROQ_API_KEY configuration detected. Key length: %d characters.", len(GROQ_API_KEY))
 
-# Initialize Groq client with no base_url overrides (Steps 3 & 4)
+# Initialize Groq client
 client = None
 if GROQ_API_KEY:
     try:
@@ -59,19 +60,20 @@ SYSTEM_PROMPT = (
     "Your goal is to help users understand general health concerns and explore potential causes. "
     "Please follow these instructions strictly:\n"
     "1. Be empathetic, objective, and clear.\n"
-    "2. If the user's description of their symptoms is too vague, ask clarifying questions to narrow down the situation.\n"
-    "3. Provide possible general causes for the symptoms described, but frame them strictly as possibilities, not diagnoses.\n"
-    "4. You MUST include the following disclaimer verbatim in your response: "
+    "2. If the user's description of their symptoms is too vague (e.g. lacks duration, severity, exact description) to make a safe, educational triage assessment, you MUST ask 1 or 2 clarifying questions first.\n"
+    "3. Under no circumstances should you output a 'SEVERITY:' classification line if you are asking clarifying questions. Only include the 'SEVERITY:' tag when you are providing your final triage advice.\n"
+    "4. Provide possible general causes for the symptoms described, but frame them strictly as possibilities, not diagnoses.\n"
+    "5. You MUST include the following disclaimer verbatim in your response: "
     "'I am an AI assistant, not a doctor. Please consult a healthcare professional for proper medical advice.'\n"
-    "5. You MUST conclude your response with a dedicated severity classification line. The line must start exactly with "
+    "6. When you are ready to issue the final triage advice, you MUST conclude your response with a dedicated severity classification line. The line must start exactly with "
     "'SEVERITY: ' followed by one of these three values: 'Self-care', 'Doctor', or 'Emergency'.\n"
     "Example of ending line: 'SEVERITY: Doctor'"
 )
 
-def parse_severity(reply: str) -> tuple[str, str]:
+def parse_severity(reply: str) -> tuple[Optional[str], Optional[str]]:
     """
     Parses the response from the LLM to identify the severity category.
-    Returns a tuple of (severity_text, icon_emoji).
+    Returns a tuple of (severity_text, icon_emoji) if a SEVERITY line is found, otherwise (None, None).
     """
     reply_upper = reply.upper()
     
@@ -83,13 +85,8 @@ def parse_severity(reply: str) -> tuple[str, str]:
     elif "SEVERITY: SELF-CARE" in reply_upper or "SEVERITY:SELF-CARE" in reply_upper or "SEVERITY: SELF CARE" in reply_upper:
         return "Self-care", "🟢"
     
-    # Fallback check for keywords anywhere in the message
-    if "EMERGENCY" in reply_upper:
-        return "Emergency", "🔴"
-    elif "DOCTOR" in reply_upper or "PHYSICIAN" in reply_upper or "CLINICAL" in reply_upper:
-        return "Doctor", "🟡"
-        
-    return "Self-care", "🟢"
+    # Do not perform keyword fallback so we don't show badges on clarifying questions
+    return None, None
 
 @app.get("/")
 def read_root():
@@ -99,7 +96,7 @@ def read_root():
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
     """
-    Handles triage chat messages, interacts with Groq Llama 3 model,
+    Handles triage chat messages, interacts with Groq model,
     parses the response for severity, and returns the response metadata.
     """
     # 1. Validate input content
@@ -123,14 +120,40 @@ def chat(request: ChatRequest):
             detail="Groq client is not initialized. Please ensure a valid GROQ_API_KEY is set in your .env file."
         )
     
-    # 3. Call Groq Completion
+    # 3. Call Groq Completion with history and vitals
     try:
+        # Build messages payload including system instructions and history
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        
+        if request.history:
+            for msg in request.history:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role in ["user", "assistant"] and content:
+                    messages.append({"role": role, "content": content})
+                    
+        # Fold vitals into the current user prompt if supplied
+        current_content = message_text
+        if request.vitals:
+            vitals_info = []
+            temp = request.vitals.get("temperature")
+            bp = request.vitals.get("bloodPressure")
+            pulse = request.vitals.get("pulse")
+            if temp:
+                vitals_info.append(f"Temperature: {temp}°F")
+            if bp:
+                vitals_info.append(f"Blood Pressure: {bp}")
+            if pulse:
+                vitals_info.append(f"Pulse: {pulse} bpm")
+                
+            if vitals_info:
+                current_content = f"Reported vitals: {', '.join(vitals_info)}.\nUser symptoms: {message_text}"
+                
+        messages.append({"role": "user", "content": current_content})
+
         completion = client.chat.completions.create(
             model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": message_text}
-            ],
+            messages=messages,
             temperature=0.5,
             max_tokens=1024,
         )
@@ -152,7 +175,7 @@ def chat(request: ChatRequest):
         status_code = 500
         detail_msg = f"An error occurred while communicating with the AI service: {error_msg}"
         
-        # 5. Classify the exception details for refined error presentation
+        # Classify the exception details for refined error presentation
         if "model_decommissioned" in error_msg.lower() or "decommissioned" in error_msg.lower():
             status_code = 400
             detail_msg = "The AI model is temporarily unavailable — please try again shortly."
