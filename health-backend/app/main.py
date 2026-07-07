@@ -86,6 +86,20 @@ def chat(request: ChatRequest):
     Handles triage chat messages, interacts with Groq Llama 3 model,
     parses the response for severity, and returns the response metadata.
     """
+    # Validate input content
+    message_text = request.message.strip() if request.message else ""
+    if not message_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Message cannot be empty or whitespace-only."
+        )
+    
+    if len(message_text) > 1000:
+        raise HTTPException(
+            status_code=400,
+            detail="Message exceeds the maximum limit of 1000 characters."
+        )
+
     if not GROQ_API_KEY or not client:
         raise HTTPException(
             status_code=500,
@@ -97,7 +111,7 @@ def chat(request: ChatRequest):
             model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": request.message}
+                {"role": "user", "content": message_text}
             ],
             temperature=0.5,
             max_tokens=1024,
