@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const VoiceButton = ({ onTranscript, disabled }) => {
+const VoiceButton = ({ onTranscript, disabled, language = 'en' }) => {
   const [isListening, setIsListening] = useState(false);
 
   const startRecognition = () => {
@@ -12,7 +12,14 @@ const VoiceButton = ({ onTranscript, disabled }) => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
+    
+    // Map language selections
+    const langMap = {
+      'en': 'en-US',
+      'hi': 'hi-IN',
+      'gu': 'gu-IN'
+    };
+    recognition.lang = langMap[language.toLowerCase()] || 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
 

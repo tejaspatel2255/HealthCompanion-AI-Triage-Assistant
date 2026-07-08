@@ -5,6 +5,8 @@ class ChatRequest(BaseModel):
     message: str
     history: Optional[List[Dict[str, str]]] = None
     vitals: Optional[Dict[str, str]] = None
+    language: Optional[str] = "en"
+    image: Optional[str] = None
 
 class ChatResponse(BaseModel):
     reply: str
