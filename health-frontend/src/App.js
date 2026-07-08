@@ -5,6 +5,7 @@ import SymptomChips from './components/SymptomChips';
 import SymptomTrends from './components/SymptomTrends';
 import { speakText } from './utils/speech';
 import { jsPDF } from 'jspdf';
+import { compileDoctorSummaryData, generatePlainDoctorSummary, generateDoctorSummaryPDF } from './utils/doctorSummary';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -78,7 +79,14 @@ const TRANSLATIONS = {
     emergencyAlertSubtitle: "Immediate medical attention is recommended.",
     callEmergency: "CALL EMERGENCY SERVICES",
     changeNumber: "Change Number",
-    emergencyAlertDisclaimer: "If this is a real emergency, call emergency services now. Do not wait for further AI guidance."
+    emergencyAlertDisclaimer: "If this is a real emergency, call emergency services now. Do not wait for further AI guidance.",
+
+    // Doctor Handoff additions
+    doctorSummaryBtn: "Doctor Summary",
+    doctorSummaryTitle: "Generate a structured report for your doctor",
+    copySummaryBtn: "Copy Text",
+    copySummaryTitle: "Copy doctor summary to clipboard for patient portal pasting",
+    copiedSuccess: "Doctor summary copied to clipboard successfully!"
   },
   hi: {
     appTitle: "हेल्थकंपैनियन",
@@ -149,7 +157,14 @@ const TRANSLATIONS = {
     emergencyAlertSubtitle: "तत्काल चिकित्सा सहायता की सिफारिश की जाती है।",
     callEmergency: "आपातकालीन सेवाओं को कॉल करें",
     changeNumber: "नंबर बदलें",
-    emergencyAlertDisclaimer: "यदि यह एक वास्तविक आपातकाल है, तो अभी आपातकालीन सेवाओं को कॉल करें। आगे के एआई मार्गदर्शन की प्रतीक्षा न करें।"
+    emergencyAlertDisclaimer: "यदि यह एक वास्तविक आपातकाल है, तो अभी आपातकालीन सेवाओं को कॉल करें। आगे के एआई मार्गदर्शन की प्रतीक्षा न करें।",
+
+    // Doctor Handoff additions
+    doctorSummaryBtn: "डॉक्टर रिपोर्ट",
+    doctorSummaryTitle: "अपने डॉक्टर के लिए एक संरचित रिपोर्ट बनाएं",
+    copySummaryBtn: "कॉपी करें",
+    copySummaryTitle: "रोगी पोर्टल में चिपकाने के लिए रिपोर्ट को क्लिपबोर्ड पर कॉपी करें",
+    copiedSuccess: "डॉक्टर सारांश सफलतापूर्वक क्लिपबोर्ड पर कॉपी हो गया!"
   },
   gu: {
     appTitle: "હેલ્થકમ્પેનિયન",
@@ -220,7 +235,14 @@ const TRANSLATIONS = {
     emergencyAlertSubtitle: "તાત્કાલિક તબીબી ધ્યાન આપવાની ભલામણ કરવામાં આવે છે.",
     callEmergency: "ઇમરજન્સી સેવાઓને કૉલ કરો",
     changeNumber: "નંબર બદલો",
-    emergencyAlertDisclaimer: "જો આ વાસ્તવિક કટોકટી હોય, તો હમણાં જ ઇમરજન્સી સેવાઓને કૉલ કરો. વધુ એઆઈ માર્ગદર્શનની રાહ જોશો નહીં."
+    emergencyAlertDisclaimer: "જો આ વાસ્તવિક કટોકટી હોય, તો હમણાં જ ઇમરજન્સી સેવાઓને કૉલ કરો. વધુ એઆઈ માર્ગદર્શનની રાહ જોશો નહીં.",
+
+    // Doctor Handoff additions
+    doctorSummaryBtn: "ડોક્ટર રીપોર્ટ",
+    doctorSummaryTitle: "તમારા ડૉક્ટર માટે એક રિપોર્ટ બનાવો",
+    copySummaryBtn: "કોપી કરો",
+    copySummaryTitle: "પેશન્ટ પોર્ટલમાં પેસ્ટ કરવા માટે રિપોર્ટને ક્લિપબોર્ડ પર કોપી કરો",
+    copiedSuccess: "ડોક્ટર રિપોર્ટ સફળતાપૂર્વક ક્લિપબોર્ડ પર કોપી થયો!"
   }
 };
 
@@ -359,6 +381,23 @@ function App() {
     reader.readAsDataURL(file);
   };
 
+  // Generate doctor summary PDF
+  const handleGenerateDoctorSummary = () => {
+    const summaryData = compileDoctorSummaryData(messages, language, TRANSLATIONS);
+    generateDoctorSummaryPDF(summaryData, language, TRANSLATIONS);
+  };
+
+  // Copy doctor summary text to clipboard
+  const handleCopyDoctorSummary = () => {
+    const summaryData = compileDoctorSummaryData(messages, language, TRANSLATIONS);
+    const plainText = generatePlainDoctorSummary(summaryData, language, TRANSLATIONS);
+    navigator.clipboard.writeText(plainText).then(() => {
+      alert(t.copiedSuccess || "Doctor summary copied to clipboard successfully!");
+    }).catch(err => {
+      console.error("Failed to copy doctor summary:", err);
+    });
+  };
+
   // Core send message logic
   const sendMessage = async (text) => {
     const trimmedText = text.trim();
@@ -374,12 +413,19 @@ function App() {
     setImage(null);
     setVitals({ temperature: '', bloodPressure: '', pulse: '' });
 
-    // 1. Push user message with image reference to history list
+    // Filter non-empty vitals values
+    const vitalsPayload = {};
+    if (currentVitals.temperature.trim()) vitalsPayload.temperature = currentVitals.temperature.trim();
+    if (currentVitals.bloodPressure.trim()) vitalsPayload.bloodPressure = currentVitals.bloodPressure.trim();
+    if (currentVitals.pulse.trim()) vitalsPayload.pulse = currentVitals.pulse.trim();
+
+    // 1. Push user message with image reference & vitals to history list
     const userMessage = {
       id: Date.now(),
       sender: 'user',
       text: trimmedText || "Uploaded diagnostic photo",
-      image: currentImage
+      image: currentImage,
+      vitals: Object.keys(vitalsPayload).length > 0 ? vitalsPayload : null
     };
     setMessages((prev) => [...prev, userMessage]);
 
@@ -389,12 +435,6 @@ function App() {
         role: m.sender === 'user' ? 'user' : 'assistant',
         content: m.text
       }));
-
-      // Filter non-empty vitals values
-      const vitalsPayload = {};
-      if (currentVitals.temperature.trim()) vitalsPayload.temperature = currentVitals.temperature.trim();
-      if (currentVitals.bloodPressure.trim()) vitalsPayload.bloodPressure = currentVitals.bloodPressure.trim();
-      if (currentVitals.pulse.trim()) vitalsPayload.pulse = currentVitals.pulse.trim();
 
       // 3. Query triage backend with language and image (base64)
       const bodyPayload = {
@@ -837,7 +877,7 @@ function App() {
           {messages.length > 0 && view === 'chat' && (
             <button
               onClick={exportToPDF}
-              className="text-[10px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-205 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition font-bold flex items-center gap-1"
+              className="text-[10px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition font-bold flex items-center gap-1"
               title={t.pdfTitle}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -847,11 +887,33 @@ function App() {
             </button>
           )}
 
+          {/* Generate Doctor Summary (PDF) */}
+          {messages.length > 0 && view === 'chat' && (
+            <button
+              onClick={handleGenerateDoctorSummary}
+              className="text-[10px] bg-blue-50 text-blue-650 hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition font-bold flex items-center gap-1"
+              title={t.doctorSummaryTitle}
+            >
+              🩺 {t.doctorSummaryBtn}
+            </button>
+          )}
+
+          {/* Copy Doctor Summary Text */}
+          {messages.length > 0 && view === 'chat' && (
+            <button
+              onClick={handleCopyDoctorSummary}
+              className="text-[10px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition font-bold flex items-center gap-1"
+              title={t.copySummaryTitle}
+            >
+              📋 {t.copySummaryBtn}
+            </button>
+          )}
+
           {/* Clear chat */}
           {messages.length > 0 && view === 'chat' && (
             <button
               onClick={clearChat}
-              className="text-[10px] text-gray-500 hover:text-red-655 dark:text-gray-400 dark:hover:text-red-400 bg-gray-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-950/20 px-2.5 py-1.5 rounded-lg transition font-bold"
+              className="text-[10px] text-gray-500 hover:text-red-655 dark:text-gray-400 dark:hover:text-red-400 bg-gray-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-955/20 px-2.5 py-1.5 rounded-lg transition font-bold"
               title={t.clearChatTitle}
             >
               {t.clearButton}
