@@ -867,7 +867,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-indigo-50 to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-between p-4 md:p-6 font-sans transition-colors duration-300">
+    <div className="h-[100dvh] bg-gradient-to-tr from-blue-50 via-indigo-50 to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-between p-4 md:p-6 font-sans transition-colors duration-300 overflow-hidden">
       
       {/* Header */}
       <header className="w-full max-w-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-md border border-white/50 dark:border-slate-800 p-4 mb-4 space-y-3">
@@ -1086,7 +1086,7 @@ function App() {
       )}
 
       {/* Main View Container */}
-      <main className="w-full max-w-2xl flex-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 dark:border-slate-800 flex flex-col overflow-hidden mb-4 min-h-[60vh] max-h-[75vh]">
+      <main className="w-full max-w-2xl flex-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 dark:border-slate-800 flex flex-col overflow-hidden mb-4 min-h-0">
         {view === 'trends' ? (
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <SymptomTrends user={user} supabase={supabase} language={language} translations={TRANSLATIONS} />
@@ -1279,7 +1279,7 @@ function App() {
       </main>
 
       {/* Disclaimer */}
-      <footer className="w-full max-w-2xl text-center px-4">
+      <footer className="w-full max-w-2xl text-center px-4 py-1 shrink-0">
         <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
           {t.disclaimer}
         </p>
