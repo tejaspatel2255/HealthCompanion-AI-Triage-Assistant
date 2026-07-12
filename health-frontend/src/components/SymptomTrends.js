@@ -1,24 +1,70 @@
 import React, { useState, useEffect } from 'react';
 
-const SymptomTrends = ({ language, translations }) => {
+const SymptomTrends = ({ user, supabase, language, translations }) => {
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
   const t = translations[language] || translations['en'];
 
   useEffect(() => {
-    try {
-      const savedLogs = JSON.parse(localStorage.getItem('healthcompanion_symptom_log')) || [];
-      // Sort oldest to newest for chronological chart rendering
-      const sorted = [...savedLogs].reverse();
-      setLogs(sorted);
-    } catch (e) {
-      console.error("Failed to load logs:", e);
-    }
-  }, []);
+    const fetchLogs = async () => {
+      if (user && supabase) {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('symptom_logs')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(60);
 
-  const handleClearLogs = () => {
+          if (error) throw error;
+          
+          if (data) {
+            const mapped = data.map(item => ({
+              date: item.created_at,
+              severity: item.severity,
+              possible_causes: item.possible_causes || []
+            }));
+            const sorted = [...mapped].reverse();
+            setLogs(sorted);
+          }
+        } catch (e) {
+          console.error("Failed to load logs from Supabase:", e);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        try {
+          const savedLogs = JSON.parse(localStorage.getItem('healthcompanion_symptom_log')) || [];
+          const sorted = [...savedLogs].reverse();
+          setLogs(sorted);
+        } catch (e) {
+          console.error("Failed to load logs from localStorage:", e);
+        }
+      }
+    };
+
+    fetchLogs();
+  }, [user, supabase]);
+
+  const handleClearLogs = async () => {
     if (window.confirm(t.confirmClearTrends || "Are you sure you want to clear your trend history?")) {
-      localStorage.removeItem('healthcompanion_symptom_log');
-      setLogs([]);
+      if (user && supabase) {
+        try {
+          const { error } = await supabase
+            .from('symptom_logs')
+            .delete()
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+          setLogs([]);
+        } catch (e) {
+          console.error("Failed to delete logs in Supabase:", e);
+        }
+      } else {
+        localStorage.removeItem('healthcompanion_symptom_log');
+        setLogs([]);
+      }
     }
   };
 
@@ -26,17 +72,16 @@ const SymptomTrends = ({ language, translations }) => {
     const s = sev ? sev.toLowerCase() : '';
     if (s.includes('emergency')) return 3;
     if (s.includes('doctor')) return 2;
-    return 1; // self-care or default
+    return 1;
   };
 
   const getSeverityColor = (sev) => {
     const s = sev ? sev.toLowerCase() : '';
     if (s.includes('emergency')) return 'text-red-500 bg-red-100 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900/30';
-    if (s.includes('doctor')) return 'text-amber-600 bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/30';
+    if (s.includes('doctor')) return 'text-amber-600 bg-amber-100 dark:bg-amber-955/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/30';
     return 'text-green-600 bg-green-100 dark:bg-green-950/40 dark:text-green-400 border border-green-200 dark:border-green-900/30';
   };
 
-  // Generate SVG chart path
   const width = 600;
   const height = 180;
   const padding = 30;
@@ -74,15 +119,22 @@ const SymptomTrends = ({ language, translations }) => {
     });
   }
 
-  // Count severity stats
   const totalCount = logs.length;
   const emergencyCount = logs.filter(l => getSeverityValue(l.severity) === 3).length;
   const doctorCount = logs.filter(l => getSeverityValue(l.severity) === 2).length;
   const selfCareCount = logs.filter(l => getSeverityValue(l.severity) === 1).length;
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center">
+        <span className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+        <p className="text-xs text-slate-500 dark:text-slate-405 mt-2">Loading trends history...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Overview Dashboard Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/40 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-slate-800 dark:text-white">
@@ -118,7 +170,6 @@ const SymptomTrends = ({ language, translations }) => {
         </div>
       ) : (
         <>
-          {/* Quick Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm text-center">
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t.totalTriages || "Total Triages"}</p>
@@ -138,14 +189,12 @@ const SymptomTrends = ({ language, translations }) => {
             </div>
           </div>
 
-          {/* Interactive Chart Card */}
           <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md p-5 rounded-2xl border border-white/30 dark:border-slate-800 shadow-md">
             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></span>
               {t.severityTimeline || "Severity Timeline"}
             </h3>
 
-            {/* Sparkline Canvas */}
             <div className="relative w-full overflow-x-auto">
               <div className="min-w-[600px] h-[200px] flex items-center justify-center p-2">
                 {chartData.length === 1 ? (
@@ -166,7 +215,6 @@ const SymptomTrends = ({ language, translations }) => {
                       </linearGradient>
                     </defs>
                     
-                    {/* Gridlines */}
                     <line x1={padding} y1={padding} x2={width-padding} y2={padding} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="3 3" className="stroke-slate-300 dark:stroke-slate-700" />
                     <text x={padding - 8} y={padding + 3} textAnchor="end" className="text-[9px] fill-red-500 font-bold">EMERGENCY</text>
 
@@ -176,12 +224,10 @@ const SymptomTrends = ({ language, translations }) => {
                     <line x1={padding} y1={height-padding} x2={width-padding} y2={height-padding} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="3 3" className="stroke-slate-300 dark:stroke-slate-700" />
                     <text x={padding - 8} y={height-padding + 3} textAnchor="end" className="text-[9px] fill-green-500 font-bold">SELF-CARE</text>
 
-                    {/* Area under the curve */}
                     {areaPoints && (
                       <polygon points={areaPoints} fill="url(#chart-area-grad)" />
                     )}
 
-                    {/* Sparkline path */}
                     {points && (
                       <polyline
                         fill="none"
@@ -193,7 +239,6 @@ const SymptomTrends = ({ language, translations }) => {
                       />
                     )}
 
-                    {/* Interactive dots */}
                     {chartData.map((d, i) => {
                       const xStep = (width - padding * 2) / (chartData.length - 1);
                       const mapY = (val) => {
@@ -221,8 +266,7 @@ const SymptomTrends = ({ language, translations }) => {
             </div>
           </div>
 
-          {/* History log entries */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-gray-105 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/20">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 {t.recentLogs || "Recent Logs"}

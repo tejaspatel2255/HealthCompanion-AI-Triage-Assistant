@@ -6,6 +6,8 @@ import SymptomTrends from './components/SymptomTrends';
 import { speakText } from './utils/speech';
 import { jsPDF } from 'jspdf';
 import { compileDoctorSummaryData, generatePlainDoctorSummary, generateDoctorSummaryPDF } from './utils/doctorSummary';
+import { supabase } from './utils/supabaseClient';
+import AuthScreen from './components/AuthScreen';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -247,6 +249,11 @@ const TRANSLATIONS = {
 };
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [authSkipped, setAuthSkipped] = useState(() => {
+    return localStorage.getItem('healthcompanion_auth_skipped') === 'true';
+  });
+
   const [messages, setMessages] = useState(() => {
     try {
       const saved = localStorage.getItem('healthcompanion_chat_history');
@@ -308,7 +315,100 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Scroll to bottom and save history
+  // Listen to Supabase Auth Changes
+  useEffect(() => {
+    if (!supabase) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Sync / Migrate Local History when Logging In
+  useEffect(() => {
+    if (!user || !supabase) return;
+
+    const fetchSupabaseHistory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('conversations')
+          .select('messages')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setMessages(data[0].messages);
+        } else {
+          const localHistory = localStorage.getItem('healthcompanion_chat_history');
+          const messagesToMigrate = localHistory ? JSON.parse(localHistory) : [];
+          if (messagesToMigrate.length > 0) {
+            await supabase
+              .from('conversations')
+              .insert([{ user_id: user.id, messages: messagesToMigrate }]);
+            setMessages(messagesToMigrate);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load/migrate chat history from Supabase:", err);
+      }
+    };
+
+    fetchSupabaseHistory();
+  }, [user]);
+
+  // Synchronize history state
+  useEffect(() => {
+    try {
+      localStorage.setItem('healthcompanion_chat_history', JSON.stringify(messages));
+    } catch (e) {
+      console.error("Failed to save chat history to localStorage:", e);
+    }
+
+    if (user && supabase && messages.length > 0) {
+      const syncHistory = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('conversations')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1);
+            
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            await supabase
+              .from('conversations')
+              .update({ messages })
+              .eq('id', data[0].id);
+          } else {
+            await supabase
+              .from('conversations')
+              .insert([{ user_id: user.id, messages }]);
+          }
+        } catch (err) {
+          console.error("Failed to synchronize conversation with Supabase:", err);
+        }
+      };
+      syncHistory();
+    }
+  }, [messages, user]);
+
+  // Scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -316,11 +416,6 @@ function App() {
   useEffect(() => {
     if (view === 'chat') {
       scrollToBottom();
-    }
-    try {
-      localStorage.setItem('healthcompanion_chat_history', JSON.stringify(messages));
-    } catch (e) {
-      console.error("Failed to save chat history to localStorage:", e);
     }
   }, [messages, view]);
 
@@ -483,14 +578,25 @@ function App() {
       // 6. Log resolved severity to Trends history (ignoring clarifying and error)
       if (data.severity && data.severity.toLowerCase() !== 'clarifying' && data.severity.toLowerCase() !== 'error') {
         try {
-          const existingLogs = JSON.parse(localStorage.getItem('healthcompanion_symptom_log')) || [];
           const newEntry = {
             date: new Date().toISOString(),
             severity: data.severity,
             possible_causes: data.possible_causes || []
           };
+
+          const existingLogs = JSON.parse(localStorage.getItem('healthcompanion_symptom_log')) || [];
           const updatedLogs = [newEntry, ...existingLogs].slice(0, 60);
           localStorage.setItem('healthcompanion_symptom_log', JSON.stringify(updatedLogs));
+
+          if (user && supabase) {
+            await supabase
+              .from('symptom_logs')
+              .insert([{
+                user_id: user.id,
+                severity: data.severity,
+                possible_causes: data.possible_causes || []
+              }]);
+          }
         } catch (e) {
           console.error("Failed to append trends log:", e);
         }
@@ -741,25 +847,22 @@ function App() {
     doc.save(fileName);
   };
 
-  if (isInitialLoading) {
+  // Render AuthScreen before chat page if guest flag is skipped
+  if (!user && !authSkipped) {
     return (
-      <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-indigo-50 to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-center p-4 md:p-6 font-sans">
-        <div className="w-full max-w-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 dark:border-slate-800 p-6 space-y-6 animate-pulse">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gray-200 dark:bg-slate-800 rounded-full"></div>
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-1/3"></div>
-              <div className="h-3 bg-gray-200 dark:bg-slate-800 rounded w-1/4"></div>
-            </div>
-          </div>
-          <div className="space-y-4 py-8">
-            <div className="h-10 bg-gray-200 dark:bg-slate-800 rounded-xl w-3/4"></div>
-            <div className="h-12 bg-gray-200 dark:bg-slate-800 rounded-xl w-1/2 ml-auto"></div>
-            <div className="h-10 bg-gray-200 dark:bg-slate-800 rounded-xl w-2/3"></div>
-          </div>
-          <div className="h-12 bg-gray-200 dark:bg-slate-800 rounded-xl w-full"></div>
-        </div>
-      </div>
+      <AuthScreen
+        onAuthSuccess={(u) => {
+          setUser(u);
+          setAuthSkipped(false);
+          localStorage.removeItem('healthcompanion_auth_skipped');
+        }}
+        onSkip={() => {
+          setAuthSkipped(true);
+          localStorage.setItem('healthcompanion_auth_skipped', 'true');
+        }}
+        language={language}
+        translations={TRANSLATIONS}
+      />
     );
   }
 
@@ -780,6 +883,38 @@ function App() {
         </div>
         
         <div className="flex items-center flex-wrap gap-2">
+          {/* User Profile Info & Log out */}
+          {user ? (
+            <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-gray-200/50 dark:border-slate-700">
+              <span className="text-[10px] text-gray-650 dark:text-gray-300 font-bold max-w-[90px] truncate" title={user.email}>
+                👤 {user.email}
+              </span>
+              <button
+                onClick={async () => {
+                  if (supabase) {
+                    await supabase.auth.signOut();
+                    setUser(null);
+                    setMessages([]);
+                    localStorage.removeItem('healthcompanion_chat_history');
+                  }
+                }}
+                className="text-[10px] text-red-600 hover:text-red-750 font-bold ml-1.5 transition"
+              >
+                Log Out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setAuthSkipped(false);
+                localStorage.removeItem('healthcompanion_auth_skipped');
+              }}
+              className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1.5 rounded-lg transition"
+            >
+              Sign In
+            </button>
+          )}
+
           {/* Language Selector */}
           <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200/50 dark:border-slate-700">
             <button
@@ -942,7 +1077,7 @@ function App() {
       <main className="w-full max-w-2xl flex-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 dark:border-slate-800 flex flex-col overflow-hidden mb-4 min-h-[60vh] max-h-[75vh]">
         {view === 'trends' ? (
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            <SymptomTrends language={language} translations={TRANSLATIONS} />
+            <SymptomTrends user={user} supabase={supabase} language={language} translations={TRANSLATIONS} />
           </div>
         ) : (
           <>
