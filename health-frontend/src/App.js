@@ -156,7 +156,7 @@ const TRANSLATIONS = {
     invalidFormat: "अमान्य फ़ाइल प्रारूप। कृपया एक जेपीजी या पीएनजी छवि अपलोड करें।",
     imageTooLarge: "छवि का आकार 5MB की सीमा से अधिक है। कृपया एक छोटी छवि अपलोड करें।",
     emergencyAlertTitle: "गंभीर आपातकाल का पता चला",
-    emergencyAlertSubtitle: "तत्काल चिकित्सा सहायता की सिफारिश की जाती है।",
+    emergencyAlertSubtitle: "तत्काल चिकित्सा सहायता की सिफारिश की जाती. है।",
     callEmergency: "आपातकालीन सेवाओं को कॉल करें",
     changeNumber: "नंबर बदलें",
     emergencyAlertDisclaimer: "यदि यह एक वास्तविक आपातकाल है, तो अभी आपातकालीन सेवाओं को कॉल करें। आगे के एआई मार्गदर्शन की प्रतीक्षा न करें।",
@@ -170,7 +170,7 @@ const TRANSLATIONS = {
   },
   gu: {
     appTitle: "હેલ્થકમ્પેનિયન",
-    appSubtitle: "શૈક્ષણિક ટ્રાયેજ મદદનીશ",
+    appSubtitle: "શેક્ષણિક ટ્રાયેજ મદદનીશ",
     onlineStatus: "એઆઈ ટ્રાયેજ ઓનલાઇન",
     chatTab: "ચેટ",
     trendsTab: "વલણો",
@@ -234,7 +234,7 @@ const TRANSLATIONS = {
     invalidFormat: "અમાન્ય ફાઇલ ફોર્મેટ. કૃપા કરીને જેપીજી અથવા પીએનજી છબી અપલોડ કરો.",
     imageTooLarge: "છબીનું કદ 5MB ની મર્યાદા કરતાં વધી ગયું છે. કૃપા કરીને નાની છબી અપલોડ કરો.",
     emergencyAlertTitle: "ગંભીર કટોકટી મળી",
-    emergencyAlertSubtitle: "તાત્કાલિક તબીબી ધ્યાન આપવાની ભલામણ કરવામાં આવે છે.",
+    emergencyAlertSubtitle: "તાત્કાલિક તબીબી ધ્યાન આપવાની ભલામણ કરવામાં આવે છે।",
     callEmergency: "ઇમરજન્સી સેવાઓને કૉલ કરો",
     changeNumber: "નંબર બદલો",
     emergencyAlertDisclaimer: "જો આ વાસ્તવિક કટોકટી હોય, તો હમણાં જ ઇમરજન્સી સેવાઓને કૉલ કરો. વધુ એઆઈ માર્ગદર્શનની રાહ જોશો નહીં.",
@@ -870,92 +870,101 @@ function App() {
     <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-indigo-50 to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-between p-4 md:p-6 font-sans transition-colors duration-300">
       
       {/* Header */}
-      <header className="w-full max-w-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-md border border-white/50 dark:border-slate-800 px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="HealthCompanion Logo" className="w-9 h-9 object-contain rounded-xl border border-gray-105 dark:border-slate-700 shadow-sm" />
-          <div>
-            <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100 tracking-tight">{t.appTitle}</h1>
-            <p className="text-[10px] text-green-600 dark:text-green-400 font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse"></span>
-              {t.onlineStatus}
-            </p>
+      <header className="w-full max-w-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-md border border-white/50 dark:border-slate-800 p-4 mb-4 space-y-3">
+        {/* Row 1: Brand Info & Profile/Language */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="HealthCompanion Logo" className="w-9 h-9 object-contain rounded-xl border border-gray-105 dark:border-slate-700 shadow-sm" />
+            <div>
+              <h1 className="text-base font-extrabold text-gray-800 dark:text-gray-100 tracking-tight leading-none">{t.appTitle}</h1>
+              <p className="text-[10px] text-green-600 dark:text-green-400 font-semibold flex items-center gap-1 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse"></span>
+                {t.onlineStatus}
+              </p>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center flex-wrap gap-2">
-          {/* User Profile Info & Log out */}
-          {user ? (
-            <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-gray-200/50 dark:border-slate-700">
-              <span className="text-[10px] text-gray-650 dark:text-gray-300 font-bold max-w-[90px] truncate" title={user.email}>
-                👤 {user.email}
-              </span>
+          
+          <div className="flex items-center gap-2">
+            {/* User Profile Info & Log out */}
+            {user ? (
+              <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-gray-200/50 dark:border-slate-700">
+                <span className="text-[10px] text-gray-650 dark:text-gray-300 font-bold max-w-[120px] truncate" title={user.email}>
+                  👤 {user.email}
+                </span>
+                <button
+                  onClick={async () => {
+                    if (supabase) {
+                      await supabase.auth.signOut();
+                      setUser(null);
+                      setMessages([]);
+                      localStorage.removeItem('healthcompanion_chat_history');
+                    }
+                  }}
+                  className="text-[10px] text-red-650 hover:text-red-750 font-bold ml-1.5 transition"
+                >
+                  Log Out
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={async () => {
-                  if (supabase) {
-                    await supabase.auth.signOut();
-                    setUser(null);
-                    setMessages([]);
-                    localStorage.removeItem('healthcompanion_chat_history');
-                  }
+                onClick={() => {
+                  setAuthSkipped(false);
+                  localStorage.removeItem('healthcompanion_auth_skipped');
                 }}
-                className="text-[10px] text-red-600 hover:text-red-750 font-bold ml-1.5 transition"
+                className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-2.5 py-1.5 rounded-lg shadow-sm transition"
               >
-                Log Out
+                Sign In
+              </button>
+            )}
+
+            {/* Language Selector */}
+            <div className="flex items-center bg-gray-105 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-205/50 dark:border-slate-700">
+              <button
+                onClick={() => handleLanguageChange('en')}
+                className={`px-2 py-1 text-[10px] font-bold rounded transition ${
+                  language === 'en'
+                    ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => handleLanguageChange('hi')}
+                className={`px-2 py-1 text-[10px] font-bold rounded transition ${
+                  language === 'hi'
+                    ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                }`}
+              >
+                हिन्दी
+              </button>
+              <button
+                onClick={() => handleLanguageChange('gu')}
+                className={`px-2 py-1 text-[10px] font-bold rounded transition ${
+                  language === 'gu'
+                    ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                }`}
+              >
+                ગુજરાતી
               </button>
             </div>
-          ) : (
-            <button
-              onClick={() => {
-                setAuthSkipped(false);
-                localStorage.removeItem('healthcompanion_auth_skipped');
-              }}
-              className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1.5 rounded-lg transition"
-            >
-              Sign In
-            </button>
-          )}
-
-          {/* Language Selector */}
-          <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200/50 dark:border-slate-700">
-            <button
-              onClick={() => handleLanguageChange('en')}
-              className={`px-2 py-1 text-[10px] font-bold rounded transition ${
-                language === 'en'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
-              }`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => handleLanguageChange('hi')}
-              className={`px-2 py-1 text-[10px] font-bold rounded transition ${
-                language === 'hi'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
-              }`}
-            >
-              हिन्दी
-            </button>
-            <button
-              onClick={() => handleLanguageChange('gu')}
-              className={`px-2 py-1 text-[10px] font-bold rounded transition ${
-                language === 'gu'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
-              }`}
-            >
-              ગુજરાતી
-            </button>
           </div>
+        </div>
 
-          {/* View Toggle */}
-          <div className="flex items-center bg-gray-105 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200/50 dark:border-slate-700">
+        {/* Divider */}
+        <hr className="border-gray-150 dark:border-slate-800" />
+
+        {/* Row 2: Navigation Tab & Actions Group */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Left Side: View Toggle */}
+          <div className="flex items-center bg-gray-105 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-205/50 dark:border-slate-700">
             <button
               onClick={() => setView('chat')}
               className={`px-3.5 py-1 text-[10px] font-bold rounded transition ${
                 view === 'chat'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
               }`}
             >
@@ -965,7 +974,7 @@ function App() {
               onClick={() => setView('trends')}
               className={`px-3.5 py-1 text-[10px] font-bold rounded transition ${
                 view === 'trends'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
               }`}
             >
@@ -973,87 +982,90 @@ function App() {
             </button>
           </div>
 
-          {/* Dark Mode */}
-          <button
-            onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition"
-            title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
-          >
-            {theme === 'light' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-              </svg>
+          {/* Right Side: Action Utilities */}
+          <div className="flex items-center flex-wrap gap-1.5">
+            {/* Dark Mode */}
+            <button
+              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+              className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg transition"
+              title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
+            >
+              {theme === 'light' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                </svg>
+              )}
+            </button>
+
+            {/* Mute/Unmute */}
+            <button
+              onClick={() => setIsMuted(prev => !prev)}
+              className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg transition"
+              title={isMuted ? "Unmute voice response" : "Mute voice response"}
+            >
+              {isMuted ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z" />
+                </svg>
+              )}
+            </button>
+
+            {/* Exporter PDF */}
+            {messages.length > 0 && view === 'chat' && (
+              <button
+                onClick={exportToPDF}
+                className="text-[10px] text-gray-650 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 px-2 py-1 rounded-md transition font-bold flex items-center gap-1"
+                title={t.pdfTitle}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {t.pdfButton}
+              </button>
             )}
-          </button>
 
-          {/* Mute/Unmute */}
-          <button
-            onClick={() => setIsMuted(prev => !prev)}
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition"
-            title={isMuted ? "Unmute voice response" : "Mute voice response"}
-          >
-            {isMuted ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z" />
-              </svg>
+            {/* Generate Doctor Summary (PDF) */}
+            {messages.length > 0 && view === 'chat' && (
+              <button
+                onClick={handleGenerateDoctorSummary}
+                className="text-[10px] bg-blue-50 text-blue-650 hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-750 px-2 py-1 rounded-md transition font-bold flex items-center gap-1"
+                title={t.doctorSummaryTitle}
+              >
+                🩺 {t.doctorSummaryBtn}
+              </button>
             )}
-          </button>
 
-          {/* Exporter PDF */}
-          {messages.length > 0 && view === 'chat' && (
-            <button
-              onClick={exportToPDF}
-              className="text-[10px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition font-bold flex items-center gap-1"
-              title={t.pdfTitle}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              {t.pdfButton}
-            </button>
-          )}
+            {/* Copy Doctor Summary Text */}
+            {messages.length > 0 && view === 'chat' && (
+              <button
+                onClick={handleCopyDoctorSummary}
+                className="text-[10px] text-gray-650 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 px-2.5 py-1 rounded-md transition font-bold flex items-center gap-1"
+                title={t.copySummaryTitle}
+              >
+                📋 {t.copySummaryBtn}
+              </button>
+            )}
 
-          {/* Generate Doctor Summary (PDF) */}
-          {messages.length > 0 && view === 'chat' && (
-            <button
-              onClick={handleGenerateDoctorSummary}
-              className="text-[10px] bg-blue-50 text-blue-650 hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition font-bold flex items-center gap-1"
-              title={t.doctorSummaryTitle}
-            >
-              🩺 {t.doctorSummaryBtn}
-            </button>
-          )}
-
-          {/* Copy Doctor Summary Text */}
-          {messages.length > 0 && view === 'chat' && (
-            <button
-              onClick={handleCopyDoctorSummary}
-              className="text-[10px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition font-bold flex items-center gap-1"
-              title={t.copySummaryTitle}
-            >
-              📋 {t.copySummaryBtn}
-            </button>
-          )}
-
-          {/* Clear chat */}
-          {messages.length > 0 && view === 'chat' && (
-            <button
-              onClick={clearChat}
-              className="text-[10px] text-gray-500 hover:text-red-655 dark:text-gray-400 dark:hover:text-red-400 bg-gray-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-955/20 px-2.5 py-1.5 rounded-lg transition font-bold"
-              title={t.clearChatTitle}
-            >
-              {t.clearButton}
-            </button>
-          )}
+            {/* Clear chat */}
+            {messages.length > 0 && view === 'chat' && (
+              <button
+                onClick={clearChat}
+                className="text-[10px] text-red-655 hover:text-red-750 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-955/20 px-2 py-1 rounded-md transition font-bold"
+                title={t.clearChatTitle}
+              >
+                {t.clearButton}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -1249,7 +1261,7 @@ function App() {
                 onChange={(e) => setInput(e.target.value)}
                 disabled={isLoading}
                 placeholder={t.inputPlaceholder}
-                className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-850 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
+                className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-855 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
               />
 
               <button
