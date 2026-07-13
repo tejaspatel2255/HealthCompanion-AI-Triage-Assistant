@@ -78,6 +78,83 @@ def read_root():
     """Health check endpoint to verify backend is up and running."""
     return {"message": "HealthCompanion API is running!"}
 
+@app.get("/debug/list-models")
+def debug_list_models():
+    if not client:
+        return {"error": "Groq client is not initialized"}
+    try:
+        models = client.models.list()
+        model_ids = [m.id for m in models.data]
+        return {"models": model_ids}
+    except Exception as err:
+        return {"error": str(err)}
+
+@app.get("/debug/vision-test")
+def debug_vision_test(model: str = "meta-llama/llama-4-scout-17b-16e-instruct", url: str = None):
+    if not client:
+        return {"error": "Groq client is not initialized"}
+    
+    if not url:
+        try:
+            from PIL import Image as PILImage
+            import io
+            import base64
+            img = PILImage.new('RGB', (10, 10), color='red')
+            buffered = io.BytesIO()
+            img.save(buffered, format="JPEG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            url = f"data:image/jpeg;base64,{img_str}"
+        except Exception as e:
+            # Fallback to a pre-computed valid 2x2 JPEG if PIL is not installed
+            url = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAACAAIBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
+    
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What color is this image?"},
+                {"type": "image_url", "image_url": {"url": url}}
+            ]
+        }
+    ]
+    
+    result = {
+        "model_requested": model,
+        "is_base64": url.startswith("data:"),
+        "payload_size_chars": len(url),
+        "status": "pending",
+        "raw_response": None,
+        "error_details": None
+    }
+    
+    try:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.1,
+            max_tokens=100
+        )
+        result["status"] = "success"
+        result["raw_response"] = completion.choices[0].message.content
+    except Exception as err:
+        result["status"] = "failed"
+        err_details = {
+            "class": type(err).__name__,
+            "message": str(err)
+        }
+        if hasattr(err, "status_code"):
+            err_details["status_code"] = err.status_code
+        if hasattr(err, "response"):
+            try:
+                err_details["response_text"] = err.response.text
+            except:
+                pass
+        if hasattr(err, "body"):
+            err_details["body"] = err.body
+        result["error_details"] = err_details
+        logger.error(f"DEBUG VISION TEST FAILED: {err_details}")
+    return result
+
 @app.get("/nearby-hospitals")
 def get_nearby_hospitals(lat: float, lon: float):
     """
@@ -334,14 +411,15 @@ def chat(chat_payload: ChatRequest, request: Request):
         "   - If target language is English: 'I am an AI assistant, not a doctor. Please consult a healthcare professional for proper medical advice.'\n"
         "   - If target language is Hindi: 'मैं एक एआई सहायक हूँ, डॉक्टर नहीं। उचित चिकित्सा सलाह के लिए कृपया किसी स्वास्थ्य देखभाल पेशेवर से परामर्श लें।'\n"
         "   - If target language is Gujarati: 'હું એઆઈ મદદનીશ છું, ડૉક્ટર નથી. કૃપા કરીને યોગ્ય તબીબી સલાહ માટે આરોગ્યસંભાળ વ્યવસાયિકની સલાહ લો.'\n"
-        "5. Do not offer formal medical diagnosis. Frame causes strictly as possibilities."
+        "5. Do not offer formal medical diagnosis. Frame causes strictly as possibilities.\n"
+        "6. Once you have enough information (including from any previously analyzed image or details from earlier turns in the conversation) to reach a confident severity level, you MUST stop asking questions and return a final severity of 'self-care', 'doctor', or 'emergency' — do not loop indefinitely on clarifying questions."
     )
 
     try:
         model_to_use = MODEL_NAME
         
         if chat_payload.image:
-            model_to_use = "qwen/qwen3.6-27b"
+            model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct"
             image_system_prompt = (
                 dynamic_system_prompt + "\n\n"
                 "CRITICAL ADDITIONAL IMAGE RULES:\n"
@@ -381,6 +459,16 @@ def chat(chat_payload: ChatRequest, request: Request):
                 current_content = f"Reported vitals: {', '.join(vitals_info)}.\nUser symptoms: {message_text}"
                 
         if chat_payload.image:
+            # Log image size, MIME type, and structure checks (never output full base64 data)
+            img_str = chat_payload.image
+            img_len = len(img_str)
+            mime_type = "unknown"
+            if img_str.startswith("data:"):
+                parts = img_str.split(";", 1)
+                mime_type = parts[0].replace("data:", "")
+            logger.info(f"IMAGE DIAGNOSIS: Size = {img_len} chars, MIME = {mime_type}")
+            logger.info(f"Groq request includes 'image_url' with expected format: {img_str[:45]}...")
+
             user_content = []
             if current_content:
                 user_content.append({"type": "text", "text": current_content})
@@ -408,18 +496,31 @@ def chat(chat_payload: ChatRequest, request: Request):
             reply_content = completion.choices[0].message.content
         except Exception as vision_err:
             if chat_payload.image:
-                logger.error(f"Vision model qwen/qwen3.6-27b failed: {vision_err}")
+                # Log detailed API error response to diagnose preview-model access
+                logger.error("--- RAW GROQ VISION ERROR DETAILS ---")
+                logger.error(f"Error Message: {str(vision_err)}")
+                if hasattr(vision_err, "status_code"):
+                    logger.error(f"HTTP Status Code: {vision_err.status_code}")
+                if hasattr(vision_err, "response"):
+                    try:
+                        logger.error(f"HTTP Response Text: {vision_err.response.text}")
+                    except:
+                        pass
+                if hasattr(vision_err, "body"):
+                    logger.error(f"HTTP Error Body: {vision_err.body}")
+                logger.error("--------------------------------------")
+
                 err_replies = {
-                    "en": "Image analysis is temporarily unavailable. Please describe your symptoms in text instead.",
-                    "hi": "छवि विश्लेषण अस्थायी रूप से अनुपलब्ध है। कृपया इसके बजाय पाठ में अपने लक्षणों का वर्णन करें।",
-                    "gu": "છબી વિશ્લેષણ અસ્થાયી રૂપે અપ્રાપ્ય છે. કૃપા કરીને તેના બદલે ટેક્સ્ટમાં તમારા લક્ષણોનું વર્ણન કરો."
+                    "en": "We couldn't analyze this image right now. Please try again or describe your symptoms in text.",
+                    "hi": "हम अभी इस छवि का विश्लेषण नहीं कर सके। कृपया पुनः प्रयास करें या पाठ में अपने लक्षणों का वर्णन करें।",
+                    "gu": "અમે અત્યારે આ છબીનું વિશ્લેષણ કરી શક્યા નથી. કૃપા કરીને ફરીથી પ્રયાસ કરો અથવા ટેક્સ્ટમાં તમારા લક્ષણોનું વર્ણન કરો."
                 }
                 fallback_reply = err_replies.get(selected_lang.lower(), err_replies["en"])
                 reply_content = json.dumps({
                     "reply": fallback_reply,
                     "possible_causes": [],
-                    "severity": "self-care",
-                    "recommended_action": "Describe symptoms in text format.",
+                    "severity": "unable to analyze",
+                    "recommended_action": "Describe symptoms in text format or try uploading again.",
                     "red_flags": []
                 })
             else:
@@ -433,22 +534,53 @@ def chat(chat_payload: ChatRequest, request: Request):
             parsed_data = {
                 "reply": reply_content,
                 "possible_causes": [],
-                "severity": "self-care",
+                "severity": "unable to analyze" if chat_payload.image else "self-care",
                 "recommended_action": "Please monitor your symptoms closely.",
                 "red_flags": []
             }
 
         # Normalize severity value
         severity_val = str(parsed_data.get("severity", "self-care")).lower().strip()
-        if severity_val not in ["self-care", "doctor", "emergency", "clarifying"]:
-            severity_val = "self-care"
+
+        # Safety cap: force severity to 'doctor' if we have had 2+ clarifying turns in this session already
+        if severity_val == "clarifying":
+            clarifying_count = 0
+            if chat_payload.history:
+                for h in chat_payload.history:
+                    hist_content = str(h.get("content", "")).lower()
+                    if "triage severity: clarifying" in hist_content or "severity: clarifying" in hist_content:
+                        clarifying_count += 1
+            
+            if clarifying_count >= 2:
+                logger.info(f"SAFETY CAP TRIGGERED: forcing 'doctor' severity after {clarifying_count} clarifying turns.")
+                severity_val = "doctor"
+                parsed_data["severity"] = "doctor"
+                
+                # Append fallback note to the reply
+                fallback_notes = {
+                    "en": "Based on the information provided, we recommend consulting a healthcare professional for a proper evaluation.",
+                    "hi": "दी गई जानकारी के आधार पर, हम उचित मूल्यांकन के लिए एक स्वास्थ्य देखभाल पेशेवर से परामर्श करने की सलाह देते हैं।",
+                    "gu": "આપેલી માહિતીના આધારે, અમે યોગ્ય મૂલ્યાંકન માટે આરોગ્યસંભાળ વ્યવસાયિકની સલાહ લેવાની ભલામણ કરીએ છીએ."
+                }
+                note = fallback_notes.get(selected_lang.lower(), fallback_notes["en"])
+                original_reply = parsed_data.get("reply", "")
+                parsed_data["reply"] = f"{original_reply}\n\n{note}"
+                parsed_data["recommended_action"] = "Schedule a visit with a medical professional."
+
+        if severity_val not in ["self-care", "doctor", "emergency", "clarifying", "unable to analyze", "error"]:
+            severity_val = "unable to analyze" if chat_payload.image else "self-care"
+
+        # Temporary server-side logging of parsed severity on every response
+        logger.info(f"--- TRIAGE RESPONSE SEVERITY: {severity_val.upper()} ---")
 
         # Compute severity icon
         icon_map = {
             "self-care": "🟢",
             "doctor": "🟡",
             "emergency": "🔴",
-            "clarifying": "⚪"
+            "clarifying": "⚪",
+            "unable to analyze": "⚪",
+            "error": "⚪"
         }
         icon_val = icon_map[severity_val]
 
@@ -457,7 +589,9 @@ def chat(chat_payload: ChatRequest, request: Request):
             "self-care": "Self-care",
             "doctor": "Doctor",
             "emergency": "Emergency",
-            "clarifying": "Clarifying"
+            "clarifying": "Clarifying",
+            "unable to analyze": "Unable to analyze",
+            "error": "Error"
         }
         severity_display = severity_display_map[severity_val]
 

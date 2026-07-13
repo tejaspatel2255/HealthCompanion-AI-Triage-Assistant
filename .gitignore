@@ -55,3 +55,8 @@ lerna-debug.log*
 
 # Temporary agent media cache
 .tempmediaStorage/
+
+# Local test files and zip archives
+Multiple-mosquito-bites-forearm-16-9.jpg
+health-frontend.zip
+*.zip

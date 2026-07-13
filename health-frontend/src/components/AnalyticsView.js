@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
 export default function AnalyticsView({ language, translations }) {
-  const t = translations[language] || translations['en'];
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
   const [passcode, setPasscode] = useState('');

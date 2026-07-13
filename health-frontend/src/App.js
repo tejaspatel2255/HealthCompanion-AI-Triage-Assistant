@@ -271,7 +271,6 @@ function App() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorBanner, setErrorBanner] = useState(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Vision image upload state (base64 string)
   const [image, setImage] = useState(null);
@@ -457,7 +456,7 @@ function App() {
     });
   };
 
-  // Client-side image upload with validation
+  // Client-side image upload with validation & canvas compression
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -468,17 +467,40 @@ function App() {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 20 * 1024 * 1025; // 20MB to match Groq vision limits
     if (file.size > maxSize) {
-      alert(t.imageTooLarge || "Image size exceeds the 5MB limit. Please upload a smaller image.");
+      alert(t.imageTooLarge || "Image size exceeds the 20MB limit. Please upload a smaller image.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImage(reader.result);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      const MAX_DIM = 1024; // Limit dimensions for fast processing and small payload size
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) {
+          height = Math.round((height * MAX_DIM) / width);
+          width = MAX_DIM;
+        } else {
+          width = Math.round((width * MAX_DIM) / height);
+          height = MAX_DIM;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Compress to 85% JPEG quality to ensure payload is tiny (typically 100-250KB)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      setImage(dataUrl);
     };
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      alert("Failed to load image for processing.");
+    };
+    img.src = URL.createObjectURL(file);
   };
 
   // Generate doctor summary PDF
@@ -530,11 +552,28 @@ function App() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      // 2. Format history payload (last 6 messages, only text contents to save bandwidth)
-      const historyPayload = messages.slice(-6).map(m => ({
-        role: m.sender === 'user' ? 'user' : 'assistant',
-        content: m.text
-      }));
+      // 2. Format history payload carrying visual indicator & structural metadata for context continuity
+      const historyPayload = messages.slice(-6).map(m => {
+        if (m.sender === 'assistant') {
+          let content = m.text;
+          if (m.severity) {
+            content += `\n[Triage Severity: ${m.severity}]`;
+          }
+          if (m.possible_causes && m.possible_causes.length > 0) {
+            content += `\n[Suspected Causes: ${m.possible_causes.join(', ')}]`;
+          }
+          if (m.red_flags && m.red_flags.length > 0) {
+            content += `\n[Red Flags: ${m.red_flags.join(', ')}]`;
+          }
+          return { role: 'assistant', content };
+        } else {
+          let content = m.text;
+          if (m.image) {
+            content = `[User uploaded image for analysis]\n${content}`;
+          }
+          return { role: 'user', content };
+        }
+      });
 
       // 3. Query triage backend with language and image (base64)
       const bodyPayload = {
@@ -556,10 +595,15 @@ function App() {
         body: JSON.stringify(bodyPayload),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        throw new Error(`Server connection error (${response.status}): Failed to parse response.`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.detail || "Server returned an invalid response.");
+        throw new Error(data?.detail || `Server error (${response.status}): ${response.statusText || 'Unknown Error'}`);
       }
 
       // 4. Push Assistant Response to State
@@ -572,6 +616,7 @@ function App() {
         recommended_action: data.recommended_action || '',
         red_flags: data.red_flags || [],
         icon: data.icon || '🟢',
+        image: currentImage || null, // Keep image reference for custom result card rendering
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
@@ -580,8 +625,9 @@ function App() {
         speakText(data.reply, language);
       }
 
-      // 6. Log resolved severity to Trends history (ignoring clarifying and error)
-      if (data.severity && data.severity.toLowerCase() !== 'clarifying' && data.severity.toLowerCase() !== 'error') {
+      // 6. Log resolved severity to Trends history (ignoring clarifying, error, and unable to analyze)
+      const sevLower = (data.severity || '').toLowerCase();
+      if (data.severity && sevLower !== 'clarifying' && sevLower !== 'error' && sevLower !== 'unable to analyze') {
         try {
           const newEntry = {
             date: new Date().toISOString(),
