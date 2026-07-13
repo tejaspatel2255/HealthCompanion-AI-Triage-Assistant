@@ -908,358 +908,372 @@ function App() {
     );
   }
 
-  return (
-    <div className="h-[100dvh] bg-gradient-to-tr from-health-bg via-slate-50 to-health-bg/90 dark:from-health-bg-dark dark:via-slate-900 dark:to-health-bg-dark/95 flex flex-col items-center justify-between p-4 md:p-6 font-sans transition-colors duration-300 overflow-hidden">
-      
-      {/* Header */}
-      <header className="w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-md border border-health-secondary/20 dark:border-slate-800 p-4 mb-4 space-y-3">
-        {/* Row 1: Brand Info & Profile/Language */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-health-primary/10 dark:bg-health-primary/20 rounded-xl flex items-center justify-center text-xl shadow-inner">
-              🩺
-            </div>
-            <div>
-              <h1 className="text-base font-serif font-bold text-health-primary dark:text-health-secondary tracking-tight leading-none">{t.appTitle}</h1>
-              <p className="text-[10px] text-health-success dark:text-health-success/80 font-bold flex items-center gap-1 mt-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-health-success inline-block animate-pulse"></span>
-                {t.onlineStatus}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* User Profile Info & Log out */}
-            {user ? (
-              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/50 dark:border-slate-700">
-                <span className="text-[10px] text-slate-600 dark:text-slate-350 font-bold max-w-[120px] truncate" title={user.email}>
-                  👤 {user.email}
-                </span>
+  const rightControls = (
+    <div className="flex items-center gap-1.5 sm:gap-2">
+      {/* User Auth */}
+      {user ? (
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 sm:py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+          <span className="text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-350 font-bold max-w-[70px] sm:max-w-[100px] truncate" title={user.email}>
+            👤 {user.email.split('@')[0]}
+          </span>
+          <button
+            onClick={async () => {
+              if (supabase) {
+                await supabase.auth.signOut();
+                setUser(null);
+                setMessages([]);
+                localStorage.removeItem('healthcompanion_chat_history');
+              }
+            }}
+            className="text-[9px] sm:text-[10px] text-health-emergency hover:text-health-emergency/80 font-bold ml-1.5 transition min-h-[28px] flex items-center"
+          >
+            Log Out
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => {
+            setAuthSkipped(false);
+            localStorage.removeItem('healthcompanion_auth_skipped');
+          }}
+          className="text-[9px] sm:text-[10px] bg-health-primary hover:bg-health-primary/90 text-white font-bold px-2 py-1 rounded-lg shadow-sm transition font-serif min-h-[28px] sm:min-h-[32px] flex items-center"
+        >
+          Sign In
+        </button>
+      )}
+
+      {/* Language Selector */}
+      <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+        <button
+          onClick={() => handleLanguageChange('en')}
+          className={`px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold rounded transition min-h-[28px] flex items-center ${
+            language === 'en'
+              ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
+          }`}
+        >
+          EN
+        </button>
+        <button
+          onClick={() => handleLanguageChange('hi')}
+          className={`px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold rounded transition min-h-[28px] flex items-center ${
+            language === 'hi'
+              ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
+          }`}
+        >
+          हि
+        </button>
+        <button
+          onClick={() => handleLanguageChange('gu')}
+          className={`px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold rounded transition min-h-[28px] flex items-center ${
+            language === 'gu'
+              ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
+          }`}
+        >
+          ગુ
+        </button>
+      </div>
+
+      {/* Settings Options Dropdown */}
+      <div className="relative">
+        {isMenuOpen && (
+          <div 
+            className="fixed inset-0 z-45" 
+            onClick={() => setIsMenuOpen(false)} 
+          />
+        )}
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="flex items-center justify-center p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold text-slate-750 dark:text-slate-205 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/50 dark:border-slate-700 rounded-lg shadow-sm transition z-50 relative min-h-[28px] sm:min-h-[32px] w-[28px] sm:w-[32px]"
+          title="Open settings and tools menu"
+        >
+          <span>⚙️</span>
+        </button>
+
+        {isMenuOpen && (
+          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-150 dark:border-slate-800 py-1.5 z-55 flex flex-col transition-all duration-200">
+            {/* Theme Toggle */}
+            <button
+              onClick={() => {
+                setTheme(prev => prev === 'light' ? 'dark' : 'light');
+                setIsMenuOpen(false);
+              }}
+              className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold min-h-[36px]"
+            >
+              <span>{theme === 'light' ? "🌙" : "☀️"}</span>
+              <span>{theme === 'light' ? (language === 'hi' ? 'डार्क मोड' : language === 'gu' ? 'ડાર્ક મોડ' : 'Dark Mode') : (language === 'hi' ? 'लाइट मोड' : language === 'gu' ? 'લાઇટ મોડ' : 'Light Mode')}</span>
+            </button>
+
+            {/* Mute/Unmute */}
+            <button
+              onClick={() => {
+                setIsMuted(prev => !prev);
+                setIsMenuOpen(false);
+              }}
+              className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold min-h-[36px]"
+            >
+              <span>{isMuted ? "🔊" : "🔇"}</span>
+              <span>{isMuted ? (language === 'hi' ? 'आवाज़ चालू करें' : language === 'gu' ? 'અવાજ ચાલુ કરો' : 'Unmute Voice') : (language === 'hi' ? 'आवाज़ बंद करें' : language === 'gu' ? 'અવાજ બંધ કરો' : 'Mute Voice')}</span>
+            </button>
+
+            {/* Export Chat PDF */}
+            {messages.length > 0 && view === 'chat' && (
+              <>
+                <hr className="border-slate-100 dark:border-slate-800 my-1" />
                 <button
-                  onClick={async () => {
-                    if (supabase) {
-                      await supabase.auth.signOut();
-                      setUser(null);
-                      setMessages([]);
-                      localStorage.removeItem('healthcompanion_chat_history');
-                    }
+                  onClick={() => {
+                    exportToPDF();
+                    setIsMenuOpen(false);
                   }}
-                  className="text-[10px] text-health-emergency hover:text-health-emergency/80 font-bold ml-1.5 transition"
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold min-h-[36px]"
                 >
-                  Log Out
+                  <span>📄</span>
+                  <span>{t.pdfButton} {language === 'hi' ? 'डाउनलोड करें' : language === 'gu' ? 'ડાઉનલોડ કરો' : 'Export'}</span>
                 </button>
-              </div>
-            ) : (
+              </>
+            )}
+
+            {/* Doctor PDF summary */}
+            {messages.length > 0 && view === 'chat' && (
               <button
                 onClick={() => {
-                  setAuthSkipped(false);
-                  localStorage.removeItem('healthcompanion_auth_skipped');
+                  handleGenerateDoctorSummary();
+                  setIsMenuOpen(false);
                 }}
-                className="text-[10px] bg-health-primary hover:bg-health-primary/90 text-white font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition font-serif"
+                className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold min-h-[36px]"
               >
-                Sign In
+                <span>🩺</span>
+                <span>{t.doctorSummaryBtn} (PDF)</span>
               </button>
             )}
 
-            {/* Language Selector */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-205/50 dark:border-slate-700">
+            {/* Copy Doctor Text */}
+            {messages.length > 0 && view === 'chat' && (
               <button
-                onClick={() => handleLanguageChange('en')}
-                className={`px-2 py-1 text-[10px] font-bold rounded transition ${
-                  language === 'en'
-                    ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
+                onClick={() => {
+                  handleCopyDoctorSummary();
+                  setIsMenuOpen(false);
+                }}
+                className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold min-h-[36px]"
+              >
+                <span>📋</span>
+                <span>{t.copySummaryBtn}</span>
+              </button>
+            )}
+
+            {/* Clear Chat */}
+            {messages.length > 0 && view === 'chat' && (
+              <>
+                <hr className="border-slate-100 dark:border-slate-800 my-1" />
+                <button
+                  onClick={() => {
+                    clearChat();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-health-emergency hover:bg-red-50 dark:hover:bg-red-955/20 text-left transition font-extrabold min-h-[36px]"
+                >
+                  <span>🗑️</span>
+                  <span>{t.clearButton}</span>
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="h-[100dvh] w-full bg-gradient-to-tr from-health-bg via-slate-50 to-health-bg/90 dark:from-health-bg-dark dark:via-slate-900 dark:to-health-bg-dark/95 flex flex-col font-sans transition-colors duration-300 overflow-hidden">
+      
+      {/* Header */}
+      <header className="w-full bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 flex justify-center py-1.5 sm:py-2 px-4 shrink-0 z-40 shadow-sm">
+        <div className="w-full max-w-4xl flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          {/* Row 1 on Mobile: Brand Info (Left) & Controls (Right) */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-health-primary/10 dark:bg-health-primary/20 rounded-xl flex items-center justify-center text-lg shadow-inner flex-shrink-0">
+                🩺
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-sm font-serif font-bold text-health-primary dark:text-health-secondary tracking-tight leading-none truncate">
+                  {t.appTitle}
+                </h1>
+                <p className="text-[9px] text-health-success dark:text-health-success/80 font-bold flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-health-success inline-block animate-pulse"></span>
+                  {t.onlineStatus}
+                </p>
+              </div>
+            </div>
+
+            {/* Mobile Controls (Sign In / Lang / Settings) */}
+            <div className="flex items-center gap-2 md:hidden">
+              {rightControls}
+            </div>
+          </div>
+
+          {/* Row 2 on Mobile: Nav Tabs */}
+          <div className="flex justify-center my-0.5 md:my-0 md:flex-1 md:justify-center">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-full border border-slate-200/50 dark:border-slate-700 shadow-inner">
+              <button
+                onClick={() => setView('chat')}
+                className={`px-3.5 py-1 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 min-h-[32px] sm:min-h-[36px] flex items-center justify-center ${
+                  view === 'chat'
+                    ? 'bg-health-primary text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
                 }`}
               >
-                EN
+                {t.chatTab}
               </button>
               <button
-                onClick={() => handleLanguageChange('hi')}
-                className={`px-2 py-1 text-[10px] font-bold rounded transition ${
-                  language === 'hi'
-                    ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
+                onClick={() => setView('trends')}
+                className={`px-3.5 py-1 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 min-h-[32px] sm:min-h-[36px] flex items-center justify-center ${
+                  view === 'trends'
+                    ? 'bg-health-primary text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
                 }`}
               >
-                हिन्दी
+                {t.trendsTab}
               </button>
               <button
-                onClick={() => handleLanguageChange('gu')}
-                className={`px-2 py-1 text-[10px] font-bold rounded transition ${
-                  language === 'gu'
-                    ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
+                onClick={() => setView('analytics')}
+                className={`px-3.5 py-1 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 min-h-[32px] sm:min-h-[36px] flex items-center justify-center ${
+                  view === 'analytics'
+                    ? 'bg-health-primary text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
                 }`}
               >
-                ગુજરાતી
+                {t.analyticsTab}
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Divider */}
-        <hr className="border-slate-150 dark:border-slate-800" />
-
-        {/* Row 2: Navigation Tab & Actions Group */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          {/* Left Side: View Toggle (Pill Shape) */}
-          <div className="flex items-center bg-slate-105 dark:bg-slate-800 p-1 rounded-full border border-slate-200/50 dark:border-slate-700 shadow-inner">
-            <button
-              onClick={() => setView('chat')}
-              className={`px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 ${
-                view === 'chat'
-                  ? 'bg-health-primary text-white shadow-sm scale-105'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-              }`}
-            >
-              {t.chatTab}
-            </button>
-            <button
-              onClick={() => setView('trends')}
-              className={`px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 ${
-                view === 'trends'
-                  ? 'bg-health-primary text-white shadow-sm scale-105'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-              }`}
-            >
-              {t.trendsTab}
-            </button>
-            <button
-              onClick={() => setView('analytics')}
-              className={`px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 ${
-                view === 'analytics'
-                  ? 'bg-health-primary text-white shadow-sm scale-105'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-              }`}
-            >
-              {t.analyticsTab}
-            </button>
-          </div>
-
-          {/* Right Side: Action Utilities Dropdown Menu */}
-          <div className="relative">
-            {isMenuOpen && (
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setIsMenuOpen(false)} 
-              />
-            )}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] md:text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/50 dark:border-slate-700 rounded-xl shadow-sm transition-all duration-200 z-50 relative"
-              title="Open settings and tools menu"
-            >
-              <span>⚙️ {language === 'hi' ? 'विकल्प' : language === 'gu' ? 'વિકલ્પો' : 'Options'}</span>
-              <span className="text-[8px] opacity-60">{isMenuOpen ? "▲" : "▼"}</span>
-            </button>
-
-            {isMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-150 dark:border-slate-800 py-1.5 z-50 flex flex-col transition-all duration-200">
-                {/* Theme Toggle */}
-                <button
-                  onClick={() => {
-                    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-                    setIsMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
-                >
-                  <span className="text-sm">{theme === 'light' ? "🌙" : "☀️"}</span>
-                  <span>{theme === 'light' ? (language === 'hi' ? 'डार्क मोड' : language === 'gu' ? 'ડાર્ક મોડ' : 'Dark Mode') : (language === 'hi' ? 'लाइट मोड' : language === 'gu' ? 'લાઇટ મોડ' : 'Light Mode')}</span>
-                </button>
-
-                {/* Mute/Unmute */}
-                <button
-                  onClick={() => {
-                    setIsMuted(prev => !prev);
-                    setIsMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
-                >
-                  <span className="text-sm">{isMuted ? "🔊" : "🔇"}</span>
-                  <span>{isMuted ? (language === 'hi' ? 'आवाज़ चालू करें' : language === 'gu' ? 'અવાજ ચાલુ કરો' : 'Unmute Voice') : (language === 'hi' ? 'आवाज़ बंद करें' : language === 'gu' ? 'અવાજ બંધ કરો' : 'Mute Voice')}</span>
-                </button>
-
-                {/* Export Chat PDF */}
-                {messages.length > 0 && view === 'chat' && (
-                  <>
-                    <hr className="border-slate-100 dark:border-slate-800 my-1" />
-                    <button
-                      onClick={() => {
-                        exportToPDF();
-                        setIsMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
-                    >
-                      <span className="text-sm">📄</span>
-                      <span>{t.pdfButton} {language === 'hi' ? 'डाउनलोड करें' : language === 'gu' ? 'ડાઉનલોડ કરો' : 'Export'}</span>
-                    </button>
-                  </>
-                )}
-
-                {/* Doctor PDF summary */}
-                {messages.length > 0 && view === 'chat' && (
-                  <button
-                    onClick={() => {
-                      handleGenerateDoctorSummary();
-                      setIsMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
-                  >
-                    <span className="text-sm">🩺</span>
-                    <span>{t.doctorSummaryBtn} (PDF)</span>
-                  </button>
-                )}
-
-                {/* Copy Doctor Text */}
-                {messages.length > 0 && view === 'chat' && (
-                  <button
-                    onClick={() => {
-                      handleCopyDoctorSummary();
-                      setIsMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
-                  >
-                    <span className="text-sm">📋</span>
-                    <span>{t.copySummaryBtn}</span>
-                  </button>
-                )}
-
-                {/* Clear Chat */}
-                {messages.length > 0 && view === 'chat' && (
-                  <>
-                    <hr className="border-slate-100 dark:border-slate-800 my-1" />
-                    <button
-                      onClick={() => {
-                        clearChat();
-                        setIsMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-health-emergency hover:bg-red-50 dark:hover:bg-red-955/20 text-left transition font-extrabold"
-                    >
-                      <span className="text-sm">🗑️</span>
-                      <span>{t.clearButton}</span>
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+          {/* Desktop Controls (Sign In / Lang / Settings) */}
+          <div className="hidden md:flex items-center gap-2">
+            {rightControls}
           </div>
         </div>
       </header>
 
-      {/* Connection Error Banner */}
-      {errorBanner && (
-        <div className="w-full max-w-2xl bg-health-emergency/10 border border-health-emergency/30 text-health-emergency px-4 py-2.5 rounded-xl flex items-center justify-between mb-4 text-xs font-semibold shadow-sm animate-fade-in">
-          <div className="flex items-center gap-2">
-            <span>⚠️</span>
-            <span>{errorBanner}</span>
-          </div>
-          <button 
-            onClick={() => setErrorBanner(null)} 
-            className="text-health-emergency hover:opacity-80 font-bold ml-2 text-sm focus:outline-none"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       {/* Main View Container */}
-      <main className="w-full max-w-2xl flex-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-lg border border-slate-250/20 dark:border-slate-800 flex flex-col overflow-hidden mb-4 min-h-0">
-        {view === 'trends' ? (
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <SymptomTrends user={user} supabase={supabase} language={language} translations={TRANSLATIONS} />
-          </div>
-        ) : view === 'analytics' ? (
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <AnalyticsView language={language} translations={TRANSLATIONS} />
-          </div>
-        ) : (
-          <>
-            {/* Messages list */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
-              {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 animate-fade-in">
-                  <div className="w-16 h-16 bg-health-primary/10 dark:bg-health-primary/20 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner">
-                    💬
-                  </div>
-                  <h2 className="text-lg font-serif font-bold text-slate-800 dark:text-slate-200 mb-1">{t.homeTitle}</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
-                    {t.homeDesc}
-                  </p>
-                  
-                  <div className="mt-6 flex flex-wrap justify-center gap-2">
-                    <button 
-                      onClick={() => setInput(t.homeSuggestion1)} 
-                      className="text-xs bg-health-primary/5 dark:bg-health-primary/10 text-health-primary dark:text-health-secondary hover:bg-health-primary/10 dark:hover:bg-health-primary/20 px-3.5 py-2 rounded-full transition font-bold border border-health-primary/20 dark:border-health-primary/30"
-                    >
-                      {t.homeSuggestion1Label}
-                    </button>
-                    <button 
-                      onClick={() => setInput(t.homeSuggestion2)} 
-                      className="text-xs bg-health-emergency/5 dark:bg-health-emergency/10 text-health-emergency hover:bg-health-emergency/10 dark:hover:bg-health-emergency/20 px-3.5 py-2 rounded-full transition font-bold border border-health-emergency/20 dark:border-health-emergency/30"
-                    >
-                      {t.homeSuggestion2Label}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                messages.map((msg) => (
-                  <ChatMessage 
-                    key={msg.id} 
-                    message={msg} 
-                    API_URL={API_URL} 
-                    language={language} 
-                    translations={TRANSLATIONS} 
-                  />
-                ))
-              )}
-
-              {/* Loading Indicator */}
-              {isLoading && (
-                <div className="flex justify-start my-2 animate-pulse">
-                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Symptom Quick-Tap Chips */}
-            {messages.length === 0 && (
-              <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-                <SymptomChips onTapChip={handleTapChip} />
+      <div className="w-full flex-1 flex justify-center min-h-0">
+        <main className="w-full max-w-4xl flex-1 flex flex-col min-h-0 bg-white/70 dark:bg-slate-900/75 backdrop-blur-md md:border-x border-slate-200/50 dark:border-slate-850 shadow-md overflow-hidden relative">
+          
+          {/* Connection Error Banner */}
+          {errorBanner && (
+            <div className="mx-4 mt-3 bg-health-emergency/10 border border-health-emergency/30 text-health-emergency px-4 py-2 rounded-xl flex items-center justify-between text-xs font-semibold shadow-sm animate-fade-in z-20 shrink-0">
+              <div className="flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{errorBanner}</span>
               </div>
-            )}
+              <button 
+                onClick={() => setErrorBanner(null)} 
+                className="text-health-emergency hover:opacity-80 font-bold ml-2 text-sm focus:outline-none"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
-            {/* Modularized Chat Input & Vitals Panel */}
-            <ChatInput
-              input={input}
-              setInput={setInput}
-              image={image}
-              setImage={setImage}
-              vitals={vitals}
-              setVitals={setVitals}
-              isVitalsOpen={isVitalsOpen}
-              setIsVitalsOpen={setIsVitalsOpen}
-              isLoading={isLoading}
-              language={language}
-              translations={TRANSLATIONS}
-              handleSend={handleSend}
-              handleImageUpload={handleImageUpload}
-              handleTranscript={handleTranscript}
-            />
-          </>
-        )}
-      </main>
+          {view === 'trends' ? (
+            <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+              <SymptomTrends user={user} supabase={supabase} language={language} translations={TRANSLATIONS} />
+            </div>
+          ) : view === 'analytics' ? (
+            <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+              <AnalyticsView language={language} translations={TRANSLATIONS} />
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Messages list */}
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 animate-fade-in my-auto">
+                    <div className="w-16 h-16 bg-health-primary/10 dark:bg-health-primary/20 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner">
+                      💬
+                    </div>
+                    <h2 className="text-lg font-serif font-bold text-slate-800 dark:text-slate-200 mb-1">{t.homeTitle}</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
+                      {t.homeDesc}
+                    </p>
+                    
+                    <div className="mt-6 flex flex-wrap justify-center gap-2">
+                      <button 
+                        onClick={() => setInput(t.homeSuggestion1)} 
+                        className="text-xs bg-health-primary/5 dark:bg-health-primary/10 text-health-primary dark:text-health-secondary hover:bg-health-primary/10 dark:hover:bg-health-primary/20 px-3.5 py-2 rounded-full transition font-bold border border-health-primary/20 dark:border-health-primary/30 active:scale-95"
+                      >
+                        {t.homeSuggestion1Label}
+                      </button>
+                      <button 
+                        onClick={() => setInput(t.homeSuggestion2)} 
+                        className="text-xs bg-health-emergency/5 dark:bg-health-emergency/10 text-health-emergency hover:bg-health-emergency/10 dark:hover:bg-health-emergency/20 px-3.5 py-2 rounded-full transition font-bold border border-health-emergency/20 dark:border-health-emergency/30 active:scale-95"
+                      >
+                        {t.homeSuggestion2Label}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map((msg) => (
+                    <ChatMessage 
+                      key={msg.id} 
+                      message={msg} 
+                      API_URL={API_URL} 
+                      language={language} 
+                      translations={TRANSLATIONS} 
+                    />
+                  ))
+                )}
 
-      {/* Disclaimer */}
-      <footer className="w-full max-w-2xl text-center px-4 py-1 shrink-0">
-        <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          {t.disclaimer}
-        </p>
-      </footer>
+                {/* Loading Indicator */}
+                {isLoading && (
+                  <div className="flex justify-start my-2 animate-pulse">
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Symptom Quick-Tap Chips */}
+              {messages.length === 0 && (
+                <div className="px-4 sm:px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
+                  <SymptomChips onTapChip={handleTapChip} />
+                </div>
+              )}
+
+              {/* Modularized Chat Input & Vitals Panel */}
+              <ChatInput
+                input={input}
+                setInput={setInput}
+                image={image}
+                setImage={setImage}
+                vitals={vitals}
+                setVitals={setVitals}
+                isVitalsOpen={isVitalsOpen}
+                setIsVitalsOpen={setIsVitalsOpen}
+                isLoading={isLoading}
+                language={language}
+                translations={TRANSLATIONS}
+                handleSend={handleSend}
+                handleImageUpload={handleImageUpload}
+                handleTranscript={handleTranscript}
+              />
+            </div>
+          )}
+
+          {/* Footer Disclaimer */}
+          <footer className="w-full text-center px-4 py-1.5 shrink-0 bg-slate-50/80 dark:bg-slate-950/80 border-t border-slate-200/50 dark:border-slate-800/80">
+            <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
+              {t.disclaimer}
+            </p>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }

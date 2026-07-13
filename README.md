@@ -13,24 +13,26 @@
 
 ## 🌟 Key Features
 
-1. **Symptom Quick-Tap Chips**: Pill-shaped symptom chips (Fever, Cough, Nausea, Headache, etc.) to quickly add symptoms to the text input for immediate combination and search.
-2. **Clarifying Follow-Up Flow**: Backend prompt instructs the AI to ask 1-2 clarifying questions when symptom descriptions are vague, holding the triage badge until sufficient details are provided.
-3. **Multimodal Image Analysis**: Upload and analyze photos of symptoms (e.g., skin rash, minor injury, swelling) using Groq's multimodal **Llama 4 Scout** model (`meta-llama/llama-4-scout-17b-16e-instruct`), delivering educational visual observations.
-4. **Context-Aware Memory**: Submits the last 6 messages in the payload history to keep conversational state active, correctly retaining earlier image context across text follow-ups.
-5. **Vitals Panel Integration**: Optional form fields allowing users to report Temperature (°F), Blood Pressure (Systolic/Diastolic), and Pulse rate (BPM) which are analyzed directly by the AI model.
-6. **Supabase Auth & Database Storage**: Secure email/password authentication (with a "Continue without an account" fallback). User chat history and symptom logs are securely persisted to a Supabase database.
-7. **SOC-Style Admin Analytics Dashboard**: Fully anonymized, aggregate dashboard summarizing system-wide trends (e.g., top symptoms, severity distributions, conversation totals) computed server-side to protect privacy.
-8. **Clean PDF Export**: Custom jsPDF exporter that generates structured documents with role tags, bulleted potential causes/red flags, warning badges, and a safety disclaimer. Automatically saved with timestamp filenames.
-9. **Class-Based Dark Mode**: Easy sun/moon toggle in the header that persists the user's preference in `localStorage`.
-10. **JSON Mode Guardrails**: Enforces structured JSON responses from Groq API to eliminate parsing glitches, with safety fallback handlers.
-11. **Safe Triage Badge Fallbacks**: If image analysis or API calls fail, the system falls back to a neutral, gray "Unable to analyze" badge rather than misleadingly defaulting to a green "Self-care" badge.
-12. **Rate Limiting**: Built-in `slowapi` guard rails to restrict clients to **15 requests per minute** to protect the backend from abuse.
+1. **Fluid, Full-Viewport Layout**: Overhauled application shell that scales dynamically from small mobile devices (375px) up to large desktops, with a centered maximum width container (`max-w-4xl`) for optimal readability.
+2. **Compact Navigation Header**: Merged brand info, profile login/status, language selectors, and navigation views into a single, space-efficient horizontal row on desktop, collapsing cleanly into settings options on mobile.
+3. **Calm Clinical Design Identity**: Custom color scheme utilizing harmonious sage green, teal, coral, and ivory tones, along with humanist serif/sans typography (`Arvo` & `Outfit`), avoiding generic SaaS template looks.
+4. **Layout & Wrap Security**: Implemented responsive flex wrapping and CSS text containment (`break-words`, absolute overflow guards) to prevent layout shifts or image clipping.
+5. **Symptom Quick-Tap Chips**: Pill-shaped symptom chips (Fever, Cough, Nausea, Headache, etc.) to quickly add symptoms to the text input for immediate combination and search.
+6. **Clarifying Follow-Up Flow**: Backend prompt instructs the AI to ask 1-2 clarifying questions when symptom descriptions are vague, holding the triage badge until sufficient details are provided.
+7. **Multimodal Image Analysis**: Upload and analyze photos of symptoms (e.g., skin rash, minor injury, swelling) using Groq's multimodal model, delivering educational visual observations.
+8. **Context-Aware Memory**: Submits the last 6 messages in the payload history to keep conversational state active, correctly retaining earlier image context across text follow-ups.
+9. **Vitals Panel Integration**: Optional form fields allowing users to report Temperature (°F), Blood Pressure (Systolic/Diastolic), and Pulse rate (BPM) which are analyzed directly by the AI model.
+10. **Supabase Auth & Database Storage**: Secure email/password authentication (with a "Continue without an account" fallback). User chat history and symptom logs are securely persisted to a Supabase database.
+11. **SOC-Style Admin Analytics Dashboard**: Fully anonymized, aggregate dashboard summarizing system-wide trends (e.g., top symptoms, severity distributions, conversation totals) computed server-side to protect privacy.
+12. **Clean PDF Export**: Custom jsPDF exporter that generates structured documents with role tags, bulleted potential causes/red flags, warning badges, and a safety disclaimer. Automatically saved with timestamp filenames.
+13. **Safe Triage Badge Fallbacks**: If image analysis or API calls fail, the system falls back to a neutral, gray "Unable to analyze" badge rather than misleadingly defaulting to a green "Self-care" badge.
+14. **Rate Limiting**: Built-in `slowapi` guard rails to restrict clients to **15 requests per minute** to protect the backend from abuse.
 
 ---
 
 ## 🛠️ Technical Stack
 
-* **Backend**: Python, FastAPI, Groq API (JSON Mode & Multimodal Llama 4 Scout), Supabase Python client, python-dotenv, Uvicorn, Slowapi
+* **Backend**: Python, FastAPI, Groq API (JSON Mode & Multimodal Llama), Supabase Python client, python-dotenv, Uvicorn, Slowapi
 * **Frontend**: React (Create React App), Supabase JS client (Authentication), Tailwind CSS, jsPDF, Web Speech API (for optional text-to-speech output and microphone input)
 * **Storage**: Supabase PostgreSQL database (tables: `conversations`, `symptom_logs`), fallback to browser LocalStorage for anonymous sessions
 
@@ -55,7 +57,7 @@ uvicorn app.main:app --reload
 ```
 
 ### 2. Frontend Configuration
-Ensure dependencies (like `jspdf`) are installed:
+Ensure dependencies are installed:
 ```bash
 cd health-frontend
 npm install
