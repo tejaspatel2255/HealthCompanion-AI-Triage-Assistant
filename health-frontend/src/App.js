@@ -8,6 +8,7 @@ import { jsPDF } from 'jspdf';
 import { compileDoctorSummaryData, generatePlainDoctorSummary, generateDoctorSummaryPDF } from './utils/doctorSummary';
 import { supabase } from './utils/supabaseClient';
 import AuthScreen from './components/AuthScreen';
+import AnalyticsView from './components/AnalyticsView';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -18,6 +19,7 @@ const TRANSLATIONS = {
     onlineStatus: "AI Triage Online",
     chatTab: "Chat",
     trendsTab: "Trends",
+    analyticsTab: "Analytics",
     quickSymptoms: "Quick Symptoms",
     reportedVitals: "Reported Vitals",
     temperature: "Temp (°F)",
@@ -96,6 +98,7 @@ const TRANSLATIONS = {
     onlineStatus: "एआई ट्राइएज ऑनलाइन",
     chatTab: "चैट",
     trendsTab: "प्रवृत्तियां",
+    analyticsTab: "विश्लेषण",
     quickSymptoms: "त्वरित लक्षण",
     reportedVitals: "रिपोर्ट किए गए वाइटल्स",
     temperature: "तापमान (°F)",
@@ -174,6 +177,7 @@ const TRANSLATIONS = {
     onlineStatus: "એઆઈ ટ્રાયેજ ઓનલાઇન",
     chatTab: "ચેટ",
     trendsTab: "વલણો",
+    analyticsTab: "વિશ્લેષણ",
     quickSymptoms: "ઝડપી લક્ષણો",
     reportedVitals: "નોંધાયેલા વાઇટલ્સ",
     temperature: "તાપમાન (°F)",
@@ -980,6 +984,16 @@ function App() {
             >
               {t.trendsTab}
             </button>
+            <button
+              onClick={() => setView('analytics')}
+              className={`px-3.5 py-1 text-[10px] font-bold rounded transition ${
+                view === 'analytics'
+                  ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+              }`}
+            >
+              {t.analyticsTab}
+            </button>
           </div>
 
           {/* Right Side: Action Utilities */}
@@ -1090,6 +1104,10 @@ function App() {
         {view === 'trends' ? (
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <SymptomTrends user={user} supabase={supabase} language={language} translations={TRANSLATIONS} />
+          </div>
+        ) : view === 'analytics' ? (
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <AnalyticsView language={language} translations={TRANSLATIONS} />
           </div>
         ) : (
           <>

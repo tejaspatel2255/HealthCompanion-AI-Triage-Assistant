@@ -23,7 +23,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from app.config import GROQ_API_KEY, GROQ_MODEL, ALLOWED_ORIGIN
+from app.config import GROQ_API_KEY, GROQ_MODEL, ALLOWED_ORIGIN, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 from app.models import ChatRequest, ChatResponse
 
 # Configure structured logging
@@ -133,6 +133,147 @@ def get_nearby_hospitals(lat: float, lon: float):
     except Exception as e:
         logger.error(f"Error querying Overpass API: {str(e)}")
         return {"hospitals": [], "error": str(e)}
+
+@app.get("/analytics/summary")
+def get_analytics_summary():
+    """
+    Fetches anonymized, aggregated symptom log data and conversation counts from Supabase.
+    No user identifiers or raw texts are returned.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        logger.warning("Supabase keys are not configured. Returning demo mock analytics data.")
+        return {
+            "is_mock": True,
+            "total_conversations": "Over 25 conversations",
+            "symptom_counts": [
+                {"name": "Headache", "count": 12},
+                {"name": "Fever", "count": 8},
+                {"name": "Cough", "count": 6},
+                {"name": "Sore Throat", "count": 5},
+                {"name": "Fatigue", "count": 4}
+            ],
+            "severity_distribution": [
+                {"severity": "Self-care", "count": 15, "percentage": 50},
+                {"severity": "Doctor", "count": 10, "percentage": 33},
+                {"severity": "Emergency", "count": 5, "percentage": 17}
+            ]
+        }
+
+    try:
+        # 1. Fetch conversations count
+        conv_url = f"{SUPABASE_URL}/rest/v1/conversations?select=id"
+        conv_req = urllib.request.Request(
+            conv_url,
+            headers={
+                "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "Prefer": "count=exact"
+            }
+        )
+        total_conv = 0
+        try:
+            with urllib.request.urlopen(conv_req) as response:
+                content_range = response.headers.get("Content-Range", "")
+                if "/" in content_range:
+                    total_conv = int(content_range.split("/")[-1])
+        except Exception as e:
+            logger.error(f"Error fetching conversation count from Supabase: {e}")
+
+        # Round conversations count to nearest 5 for anonymity
+        if total_conv < 5:
+            approx_conv = "Fewer than 5 conversations"
+        else:
+            rounded = round(total_conv / 5) * 5
+            approx_conv = f"Over {rounded} conversations"
+
+        # 2. Fetch symptom logs from last 30 days
+        from datetime import datetime, timedelta
+        thirty_days_ago = (datetime.utcnow() - timedelta(days=30)).isoformat()
+        
+        logs_url = f"{SUPABASE_URL}/rest/v1/symptom_logs?select=severity,possible_causes,created_at&created_at=gte.{thirty_days_ago}"
+        logs_req = urllib.request.Request(
+            logs_url,
+            headers={
+                "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
+            }
+        )
+        
+        logs = []
+        with urllib.request.urlopen(logs_req) as response:
+            logs = json.loads(response.read().decode("utf-8"))
+
+        # Process logs
+        symptom_frequency = {}
+        severity_counts = {"self-care": 0, "doctor": 0, "emergency": 0}
+        total_valid_severities = 0
+
+        for log in logs:
+            # Parse severity
+            sev = str(log.get("severity", "")).lower().strip()
+            if sev in severity_counts:
+                severity_counts[sev] += 1
+                total_valid_severities += 1
+
+            # Parse possible causes
+            causes = log.get("possible_causes", [])
+            if isinstance(causes, list):
+                for cause in causes:
+                    c_clean = str(cause).strip()
+                    if c_clean:
+                        symptom_frequency[c_clean] = symptom_frequency.get(c_clean, 0) + 1
+            elif isinstance(causes, str):
+                try:
+                    causes_list = json.loads(causes)
+                    if isinstance(causes_list, list):
+                        for cause in causes_list:
+                            c_clean = str(cause).strip()
+                            if c_clean:
+                                symptom_frequency[c_clean] = symptom_frequency.get(c_clean, 0) + 1
+                except:
+                    pass
+
+        # Format symptoms count list, sorted descending, limit to top 8
+        sorted_symptoms = sorted(symptom_frequency.items(), key=lambda x: x[1], reverse=True)
+        symptom_counts_list = [{"name": name, "count": count} for name, count in sorted_symptoms[:8]]
+
+        # Format severity distribution with percentages
+        severity_dist = []
+        for sev_key, display_name in [("self-care", "Self-care"), ("doctor", "Doctor"), ("emergency", "Emergency")]:
+            count = severity_counts[sev_key]
+            percentage = 0
+            if total_valid_severities > 0:
+                percentage = round((count / total_valid_severities) * 100)
+            severity_dist.append({
+                "severity": display_name,
+                "count": count,
+                "percentage": percentage
+            })
+
+        return {
+            "is_mock": False,
+            "total_conversations": approx_conv,
+            "symptom_counts": symptom_counts_list,
+            "severity_distribution": severity_dist
+        }
+
+    except Exception as e:
+        logger.error(f"Error compiling analytics summary: {e}")
+        return {
+            "is_mock": True,
+            "error": str(e),
+            "total_conversations": "Over 10 conversations (Demo Mode)",
+            "symptom_counts": [
+                {"name": "Headache", "count": 5},
+                {"name": "Cough", "count": 3},
+                {"name": "Fever", "count": 2}
+            ],
+            "severity_distribution": [
+                {"severity": "Self-care", "count": 6, "percentage": 60},
+                {"severity": "Doctor", "count": 3, "percentage": 30},
+                {"severity": "Emergency", "count": 1, "percentage": 10}
+            ]
+        }
 
 @app.post("/chat", response_model=ChatResponse)
 @limiter.limit("15/minute")
