@@ -16,7 +16,7 @@ const SYMPTOMS = [
 const SymptomChips = ({ onTapChip }) => {
   return (
     <div className="w-full space-y-2">
-      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
         Quick-tap symptoms to describe your condition:
       </p>
       <div className="flex flex-wrap gap-2">
@@ -25,7 +25,7 @@ const SymptomChips = ({ onTapChip }) => {
             key={symptom}
             type="button"
             onClick={() => onTapChip(symptom)}
-            className="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 transition active:scale-95 duration-150"
+            className="px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-350 hover:bg-health-primary/10 dark:hover:bg-health-primary/20 hover:text-health-primary dark:hover:text-health-secondary hover:border-health-primary/30 transition active:scale-95 duration-150 shadow-sm"
           >
             + {symptom}
           </button>

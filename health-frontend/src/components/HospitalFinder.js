@@ -56,7 +56,7 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
         L.marker([lat, lon], {
           icon: L.divIcon({
             className: 'custom-user-marker',
-            html: `<div class='w-3 h-3 bg-blue-600 rounded-full border-2 border-white ring-4 ring-blue-500/30 animate-pulse'></div>`,
+            html: `<div class='w-3 h-3 bg-health-primary rounded-full border-2 border-white ring-4 ring-health-primary/30 animate-pulse'></div>`,
             iconSize: [12, 12]
           })
         }).bindPopup("<b>Your Location</b>").addTo(markersGroupRef.current);
@@ -66,7 +66,7 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
         (data.hospitals || []).forEach(h => {
           if (h.lat && h.lon) {
             L.marker([h.lat, h.lon])
-              .bindPopup(`<b>${h.name}</b><br/>${h.address}<br/><span class="text-xs text-blue-550 font-bold">${h.type}</span>`)
+              .bindPopup(`<b>${h.name}</b><br/>${h.address}<br/><span class="text-xs text-health-primary font-bold">${h.type}</span>`)
               .addTo(markersGroupRef.current);
             bounds.push([h.lat, h.lon]);
           }
@@ -128,13 +128,13 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
   };
 
   return (
-    <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-gray-200 dark:border-slate-800">
+    <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800">
       <div className="flex items-center gap-2 mb-3">
-        <svg className="w-5 h-5 text-red-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-health-caution animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-        <h4 className="text-sm font-bold text-slate-850 dark:text-slate-205">
+        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
           {t.hospitalFinderTitle || "Local Medical Facilities Finder"}
         </h4>
       </div>
@@ -148,7 +148,7 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
         <button
           onClick={handleLocateUser}
           disabled={loading}
-          className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-750 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl shadow-sm transition duration-200"
+          className="w-full py-2.5 px-4 bg-health-primary hover:bg-health-primary/90 disabled:bg-slate-400 text-white font-bold text-xs rounded-xl shadow-sm transition duration-200 font-serif"
         >
           {loading ? (t.locating || "Locating...") : (t.findFacilities || "Find Nearby Hospitals & Clinics")}
         </button>
@@ -156,7 +156,7 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
 
       {/* Error Presentation */}
       {error && (
-        <div className="mt-3 p-3 bg-red-50 dark:bg-red-955/20 text-red-700 dark:text-red-400 text-xs rounded-xl border border-red-100 dark:border-red-900/30">
+        <div className="mt-3 p-3 bg-health-emergency/10 text-health-emergency text-xs rounded-xl border border-health-emergency/30">
           {error}
         </div>
       )}
@@ -167,7 +167,7 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
           {/* Map canvas */}
           <div 
             ref={mapContainerRef} 
-            className="w-full h-[180px] rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-inner"
+            className="w-full h-[180px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner"
             style={{ zIndex: 1 }}
           />
 
@@ -185,12 +185,12 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
               {hospitals.map((h, i) => (
                 <div 
                   key={i} 
-                  className="p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700/60 shadow-sm flex items-start justify-between gap-2 text-xs"
+                  className="p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/60 shadow-sm flex items-start justify-between gap-2 text-xs"
                 >
-                  <div>
-                    <h5 className="font-semibold text-slate-800 dark:text-slate-200">{h.name}</h5>
-                    <p className="text-slate-500 dark:text-slate-400 mt-0.5">{h.address}</p>
-                    <span className="text-[10px] text-blue-500 dark:text-blue-400 font-medium mt-1 inline-block uppercase tracking-wider">
+                  <div className="flex-1 min-w-0">
+                    <h5 className="font-semibold text-slate-800 dark:text-slate-200 truncate">{h.name}</h5>
+                    <p className="text-slate-500 dark:text-slate-400 mt-0.5 truncate">{h.address}</p>
+                    <span className="text-[10px] text-health-primary dark:text-health-secondary font-bold mt-1 inline-block uppercase tracking-wider">
                       {h.type}
                     </span>
                   </div>
@@ -199,7 +199,7 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
                       href={`https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lon}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:text-blue-400 font-bold rounded-lg transition"
+                      className="px-2.5 py-1.5 bg-health-primary/10 hover:bg-health-primary/20 text-health-primary dark:bg-slate-700/50 dark:hover:bg-slate-700 dark:text-health-secondary font-bold rounded-xl transition flex-shrink-0"
                     >
                       {t.navigate || "Directions"}
                     </a>
@@ -212,7 +212,7 @@ const HospitalFinder = ({ API_URL, language, translations }) => {
       )}
 
       {/* Safety Notice Disclaimer */}
-      <div className="mt-3.5 pt-2.5 border-t border-gray-200 dark:border-slate-800/80 text-[10px] text-slate-400 dark:text-slate-500 italic leading-relaxed">
+      <div className="mt-3.5 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 text-[10px] text-slate-400 dark:text-slate-500 italic leading-relaxed">
         ⚠️ <b>{t.safetyNoticeTitle || "Emergency Disclaimer:"}</b> {t.safetyNoticeDesc || "This tool uses crowd-sourced Map data and is not an active emergency registry. If you are experiencing a life-threatening crisis, please CALL your emergency services (e.g. 911 / 112) directly instead of looking for directions."}
       </div>
     </div>

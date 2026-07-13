@@ -61,8 +61,8 @@ const VoiceButton = ({ onTranscript, disabled, language = 'en' }) => {
       disabled={disabled || isListening}
       className={`p-3 rounded-xl transition relative flex items-center justify-center ${
         isListening
-          ? 'bg-red-500 text-white animate-pulse shadow-md shadow-red-200'
-          : 'bg-gray-150 hover:bg-gray-200 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
+          ? 'bg-health-emergency text-white animate-pulse shadow-md shadow-health-emergency/20'
+          : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-550 dark:text-slate-450 disabled:opacity-50 disabled:cursor-not-allowed'
       }`}
       title={isListening ? "Listening..." : "Speak symptoms"}
     >
@@ -71,8 +71,8 @@ const VoiceButton = ({ onTranscript, disabled, language = 'en' }) => {
       </svg>
       {isListening && (
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-health-emergency opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-health-emergency"></span>
         </span>
       )}
     </button>

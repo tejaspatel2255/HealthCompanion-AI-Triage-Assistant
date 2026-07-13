@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './components/ChatMessage';
-import VoiceButton from './components/VoiceButton';
+import ChatInput from './components/ChatInput';
 import SymptomChips from './components/SymptomChips';
 import SymptomTrends from './components/SymptomTrends';
 import { speakText } from './utils/speech';
@@ -78,7 +78,7 @@ const TRANSLATIONS = {
     // Vision and Emergency additions
     imageDisclaimer: "Image analysis is for general guidance only — not a medical diagnosis. A rash or injury photo cannot replace an in-person examination.",
     invalidFormat: "Invalid file format. Please upload a JPG or PNG image.",
-    imageTooLarge: "Image size exceeds the 5MB limit. Please upload a smaller image.",
+    imageTooLarge: "Image size exceeds the 20MB limit. Please upload a smaller image.",
     emergencyAlertTitle: "CRITICAL EMERGENCY DETECTED",
     emergencyAlertSubtitle: "Immediate medical attention is recommended.",
     callEmergency: "CALL EMERGENCY SERVICES",
@@ -98,145 +98,145 @@ const TRANSLATIONS = {
     onlineStatus: "एआई ट्राइएज ऑनलाइन",
     chatTab: "चैट",
     trendsTab: "प्रवृत्तियां",
-    analyticsTab: "विश्लेषण",
+    analyticsTab: "विश्लेषिकी",
     quickSymptoms: "त्वरित लक्षण",
-    reportedVitals: "रिपोर्ट किए गए वाइटल्स",
+    reportedVitals: "दर्ज वाइटल्स",
     temperature: "तापमान (°F)",
     bloodPressure: "रक्तचाप (सिस्टोलिक/डायस्टोलिक)",
-    pulse: "नाड़ी (BPM)",
-    tempPlaceholder: "उदा. 98.6",
-    bpPlaceholder: "उदा. 120/80",
-    pulsePlaceholder: "उदा. 72",
+    pulse: "पल्स (BPM)",
+    tempPlaceholder: "जैसे 98.6",
+    bpPlaceholder: "जैसे 120/80",
+    pulsePlaceholder: "जैसे 72",
     vitalsTitle: "रोगी वाइटल्स (वैकल्पिक)",
     vitalsSubtitle: "वाइटल्स जोड़ें (वैकल्पिक)",
     inputPlaceholder: "लक्षणों का वर्णन करें या फोटो अपलोड करें...",
     pdfButton: "पीडीएफ",
     pdfTitle: "बातचीत को पीडीएफ के रूप में डाउनलोड करें",
-    clearButton: "साफ़ करें",
-    clearChatTitle: "बातचीत का इतिहास साफ़ करें",
-    trendsTitle: "लक्षणों की गंभीरता की प्रवृत्ति",
-    trendsSubtitle: "लॉग इन किए गए ट्राइएज परिणामों का शैक्षिक सारांश",
-    clearHistory: "इतिहास साफ़ करें",
+    clearButton: "साफ करें",
+    clearChatTitle: "बातचीत का इतिहास साफ करें",
+    trendsTitle: "लक्षण गंभीरता रुझान",
+    trendsSubtitle: "लॉग किए गए ट्राइएज परिणामों का शैक्षिक सारांश",
+    clearHistory: "इतिहास साफ करें",
     totalTriages: "कुल ट्राइएज",
-    selfCare: "स्वयं की देखभाल",
-    seeDoctor: "डॉक्टर से मिलें",
+    selfCare: "स्व-देखभाल",
+    seeDoctor: "डॉक्टर को दिखाएं",
     emergency: "आपातकालीन",
     severityTimeline: "गंभीरता समयरेखा",
-    needMorePoints: "समयरेखा स्पार्कलाइन बनाने के लिए अधिक लॉग जोड़ें।",
+    needMorePoints: "समयरेखा स्पार्कलाइन प्लॉट करने के लिए अधिक लॉग जोड़ें।",
     recentLogs: "हाल के लॉग",
-    noHistoryTitle: "अभी तक कोई लक्षण इतिहास नहीं है",
-    noHistoryDesc: "चैट शुरू करें और लक्षण सबमिट करें। सुलझाए गए ट्राइएज मूल्यांकन आपका प्रवृत्ति चार्ट बनाएंगे।",
-    confirmClearTrends: "क्या आप वाकई अपना प्रवृत्ति इतिहास साफ़ करना चाहते हैं?",
+    noHistoryTitle: "अभी तक कोई इतिहास नहीं",
+    noHistoryDesc: "चैट बातचीत शुरू करें और लक्षण सबमिट करें। हल किए गए ट्राइएज मूल्यांकन आपका रुझान चार्ट बनाएंगे।",
+    confirmClearTrends: "क्या आप वाकई अपना रुझान इतिहास साफ करना चाहते हैं?",
     hospitalFinderTitle: "स्थानीय चिकित्सा सुविधा खोजक",
-    hospitalFinderDesc: "त्वरित देखभाल की आवश्यकता है? हम आपके डिवाइस स्थान के आधार पर आसपास के अस्पतालों और क्लीनिकों के लिए सार्वजनिक रूप से उपलब्ध ओपनस्ट्रीटमैप डेटा की जांच कर सकते हैं।",
-    findFacilities: "आसपास के अस्पताल और क्लीनिक खोजें",
-    locating: "स्थान खोजा जा रहा है...",
-    searchingFacilities: "ओवरपास रजिस्ट्री में खोजा जा रहा है...",
+    hospitalFinderDesc: "तत्काल देखभाल की आवश्यकता है? हम आपके डिवाइस स्थान के आधार पर नजदीकी अस्पतालों और क्लीनिकों के लिए सार्वजनिक रूप से उपलब्ध ओपनस्ट्रीटमैप डेटा की जांच कर सकते हैं।",
+    findFacilities: "नजदीकी अस्पताल और क्लीनिक खोजें",
+    locating: "स्थान खोज रहा है...",
+    searchingFacilities: "ओवरपास रजिस्ट्री खोज रहा है...",
     noFacilitiesFound: "आपके स्थान के 5 किमी के भीतर कोई क्लिनिक या अस्पताल नहीं मिला।",
     navigate: "दिशा-निर्देश",
     safetyNoticeTitle: "आपातकालीन अस्वीकरण:",
-    safetyNoticeDesc: "यह उपकरण क्राउड-सोर्स मैप डेटा का उपयोग करता है और यह कोई सक्रिय आपातकालीन रजिस्ट्री नहीं है। यदि आप जीवन-धमकाने वाले संकट का अनुभव कर रहे हैं, तो कृपया निर्देश खोजने के बजाय सीधे अपनी आपातकालीन सेवाओं (जैसे 108 / 112) को कॉल करें।",
-    vitalsSubmitted: "वाइटल्स सफलतापूर्वक सबमिट हो गए।",
-    aiSpeaking: "प्रतिक्रिया जोर से पढ़ रहे हैं...",
-    loadingText: "ट्राइएज विश्लेषण चल रहा है...",
-    clearConfirm: "क्या आप वाकई इस बातचीत को मिटाना चाहते हैं?",
+    safetyNoticeDesc: "यह उपकरण क्राउड-सोर्स मैप डेटा का उपयोग करता है और कोई सक्रिय आपातकालीन रजिस्ट्री नहीं है। यदि आप जीवन-धमकाने वाले संकट का सामना कर रहे हैं, तो कृपया दिशा-निर्देशों की तलाश करने के बजाय सीधे अपनी आपातकालीन सेवाओं (जैसे 911 / 112) को कॉल करें।",
+    vitalsSubmitted: "वाइटल्स सफलतापूर्वक सबमिट किए गए।",
+    aiSpeaking: "जवाब जोर से पढ़ रहा है...",
+    loadingText: "ट्राइएज विश्लेषण प्रगति पर है...",
+    clearConfirm: "क्या आप वाकई इस बातचीत को साफ करना चाहते हैं?",
     homeTitle: "आपका एआई स्वास्थ्य साथी",
-    homeDesc: "अपने लक्षणों का वर्णन करें या चिकित्सा संबंधी प्रश्न पूछें। आप अपनी चिंताओं को टाइप कर सकते हैं, माइक्रोफ़ोन बटन का उपयोग कर सकते हैं, या लक्षण का फोटो अपलोड कर सकते हैं (उदा. त्वचा पर लाल चकत्ते या हल्की चोट)।",
-    homeSuggestion1: "मुझे हल्का सिरदर्द और थोड़ा बुखार है",
-    homeSuggestion1Label: "\"मुझे हल्का सिरदर्द और बुखार है\"",
-    homeSuggestion2: "मेरी छाती में जकड़न महसूस हो रही है और मेरी सांस फूल रही है",
-    homeSuggestion2Label: "\"छाती में जकड़न और सांस फूलना\"",
-    disclaimer: "अस्वीकरण: हेल्थकंपैनियन पूरी तरह से एक शैक्षिक उपकरण है। यह चिकित्सा निदान, उपचार सलाह या नुस्खे प्रदान नहीं करता है। किसी भी स्वास्थ्य चिंता के लिए या चिकित्सा निर्णय लेने से पहले हमेशा एक लाइसेंस प्राप्त स्वास्थ्य देखभाल पेशेवर से परामर्श लें। यदि आप आपातकाल का सामना कर रहे हैं, तो तुरंत अपने स्थानीय आपातकालीन सेवाओं (108/112) से संपर्क करें।",
+    homeDesc: "अपने लक्षणों का वर्णन करें या चिकित्सा प्रश्न पूछें। आप टाइप कर सकते हैं, माइक्रोफोन का उपयोग कर सकते हैं, या लक्षण का फोटो अपलोड कर सकते हैं (जैसे, त्वचा पर लाल चकत्ते या मामूली घाव)।",
+    homeSuggestion1: "मुझे हल्का सिरदर्द और हल्का बुखार है",
+    homeSuggestion1Label: "\"हल्का सिरदर्द और बुखार है\"",
+    homeSuggestion2: "मेरी छाती में जकड़न है और सांस लेने में तकलीफ है",
+    homeSuggestion2Label: "\"छाती में जकड़न और सांस की तकलीफ\"",
+    disclaimer: "अस्वीकरण: हेल्थकंपैनियन पूरी तरह से एक शैक्षिक उपकरण है। यह चिकित्सा निदान, उपचार सलाह या नुस्खे प्रदान नहीं करता है। किसी भी स्वास्थ्य चिंता के लिए या चिकित्सा निर्णय लेने से पहले हमेशा एक लाइसेंस प्राप्त स्वास्थ्य पेशेवर से परामर्श लें। यदि आप आपात स्थिति का सामना कर रहे हैं, तो तुरंत अपने स्थानीय आपातकालीन सेवाओं (911/112) से संपर्क करें।",
     pdfHeading: "हेल्थकंपैनियन — बातचीत का सारांश",
     pdfGenerated: "उत्पन्न तिथि:",
     pdfPage: "पृष्ठ",
     potentialCauses: "संभावित कारण:",
-    redFlagsTitle: "चेतावनी के लक्षण जिन पर ध्यान दें:",
+    redFlagsTitle: "चेतावनी संकेत जिन पर ध्यान दें:",
     recommendedActionLabel: "अनुशंसित कार्रवाई:",
 
     // Vision and Emergency additions
-    imageDisclaimer: "छवि विश्लेषण केवल सामान्य मार्गदर्शन के लिए है - कोई चिकित्सा निदान नहीं है। दाने या चोट की तस्वीर इन-पर्सन परीक्षा की जगह नहीं ले सकती।",
-    invalidFormat: "अमान्य फ़ाइल प्रारूप। कृपया एक जेपीजी या पीएनजी छवि अपलोड करें।",
-    imageTooLarge: "छवि का आकार 5MB की सीमा से अधिक है। कृपया एक छोटी छवि अपलोड करें।",
-    emergencyAlertTitle: "गंभीर आपातकाल का पता चला",
-    emergencyAlertSubtitle: "तत्काल चिकित्सा सहायता की सिफारिश की जाती. है।",
+    imageDisclaimer: "छवि विश्लेषण केवल सामान्य मार्गदर्शन के लिए है — कोई चिकित्सा निदान नहीं। चकत्ते या चोट का फोटो व्यक्तिगत जांच का स्थान नहीं ले सकता।",
+    invalidFormat: "अमान्य फ़ाइल स्वरूप। कृपया JPG या PNG छवि अपलोड करें।",
+    imageTooLarge: "छवि का आकार 20MB की सीमा से अधिक है। कृपया एक छोटी छवि अपलोड करें।",
+    emergencyAlertTitle: "गंभीर आपात स्थिति का पता चला",
+    emergencyAlertSubtitle: "तत्काल चिकित्सा ध्यान देने की सिफारिश की जाती है।",
     callEmergency: "आपातकालीन सेवाओं को कॉल करें",
     changeNumber: "नंबर बदलें",
-    emergencyAlertDisclaimer: "यदि यह एक वास्तविक आपातकाल है, तो अभी आपातकालीन सेवाओं को कॉल करें। आगे के एआई मार्गदर्शन की प्रतीक्षा न करें।",
+    emergencyAlertDisclaimer: "यदि यह एक वास्तविक आपात स्थिति है, तो अभी आपातकालीन सेवाओं को कॉल करें। आगे एआई मार्गदर्शन की प्रतीक्षा न करें।",
 
     // Doctor Handoff additions
     doctorSummaryBtn: "डॉक्टर रिपोर्ट",
-    doctorSummaryTitle: "अपने डॉक्टर के लिए एक संरचित रिपोर्ट बनाएं",
+    doctorSummaryTitle: "अपने डॉक्टर के लिए एक रिपोर्ट तैयार करें",
     copySummaryBtn: "कॉपी करें",
-    copySummaryTitle: "रोगी पोर्टल में चिपकाने के लिए रिपोर्ट को क्लिपबोर्ड पर कॉपी करें",
-    copiedSuccess: "डॉक्टर सारांश सफलतापूर्वक क्लिपबोर्ड पर कॉपी हो गया!"
+    copySummaryTitle: "मरीज पोर्टल में पेस्ट करने के लिए रिपोर्ट को क्लिपबॉर्ड पर कॉपी करें",
+    copiedSuccess: "डॉक्टर रिपोर्ट सफलतापूर्वक क्लिपबोर्ड पर कॉपी हो गई!"
   },
   gu: {
     appTitle: "હેલ્થકમ્પેનિયન",
-    appSubtitle: "શેક્ષણિક ટ્રાયેજ મદદનીશ",
+    appSubtitle: "શૈક્ષણિક ટ્રાયેજ સહાયક",
     onlineStatus: "એઆઈ ટ્રાયેજ ઓનલાઇન",
     chatTab: "ચેટ",
-    trendsTab: "વલણો",
+    trendsTab: "ટ્રેન્ડ્સ",
     analyticsTab: "વિશ્લેષણ",
     quickSymptoms: "ઝડપી લક્ષણો",
-    reportedVitals: "નોંધાયેલા વાઇટલ્સ",
+    reportedVitals: "નોંધાયેલ વાઇટલ્સ",
     temperature: "તાપમાન (°F)",
-    bloodPressure: "બ્લડ પ્રેશર (સિસ્ટોલિક/ડાયાસ્ટોલિક)",
+    bloodPressure: "બ્લડ પ્રેશર (સિસ્ટોલિક/ડાયસ્ટોલિક)",
     pulse: "પલ્સ (BPM)",
     tempPlaceholder: "દા.ત. 98.6",
     bpPlaceholder: "દા.ત. 120/80",
     pulsePlaceholder: "દા.ત. 72",
     vitalsTitle: "દર્દીના વાઇટલ્સ (વૈકલ્પિક)",
     vitalsSubtitle: "વાઇટલ્સ ઉમેરો (વૈકલ્પિક)",
-    inputPlaceholder: "લક્ષણો લખો અથવા ફોટો અપલોડ કરો...",
+    inputPlaceholder: "લક્ષણો વર્ણવો અથવા ફોટો અપલોડ કરો...",
     pdfButton: "પીડીએફ",
     pdfTitle: "વાતચીતને પીડીએફ તરીકે ડાઉનલોડ કરો",
     clearButton: "સાફ કરો",
     clearChatTitle: "વાતચીતનો ઇતિહાસ સાફ કરો",
     trendsTitle: "લક્ષણોની ગંભીરતાના વલણો",
-    trendsSubtitle: "નોંધાયેલા ટ્રાયેજ પરિણામોનો શૈક્ષણિક સારાંશ",
+    trendsSubtitle: "લૉગ કરેલા ટ્રાયેજ પરિણામોનો શૈક્ષણિક સારાંશ",
     clearHistory: "ઇતિહાસ સાફ કરો",
     totalTriages: "કુલ ટ્રાયેજ",
-    selfCare: "સ્વયં સંભાળ",
+    selfCare: "સ્વ-સંભાળ",
     seeDoctor: "ડૉક્ટરને બતાવો",
     emergency: "કટોકટી",
-    severityTimeline: "ગંભીરતાની સમયરેખા",
-    needMorePoints: "સમયરેખા સ્પાર્કલાઇન બનાવવા માટે વધુ લોગ ઉમેરો.",
+    severityTimeline: "ગંભીરતા સમયરેખા",
+    needMorePoints: "સમયરેખા સ્પાર્કલાઇન પ્લોટ કરવા માટે વધુ લોગ ઉમેરો.",
     recentLogs: "તાજેતરના લોગ",
-    noHistoryTitle: "હજી સુધી કોઈ ઇતિહાસ નથી",
-    noHistoryDesc: "ચેટ શરૂ કરો અને લક્ષણો સબમિટ કરો. ઉકેલાયેલ ટ્રાયેજ મૂલ્યાંકન તમારો ટ્રેન્ડ ચાર્ટ બનાવશે.",
+    noHistoryTitle: "હજુ સુધી કોઈ ઇતિહાસ નથી",
+    noHistoryDesc: "ચેટ વાતચીત શરૂ કરો અને લક્ષણો સબમિટ કરો. ઉકેલાયેલ ટ્રાયેજ મૂલ્યાંકન તમારો ટ્રેન્ડ ચાર્ટ બનાવશે.",
     confirmClearTrends: "શું તમે ખરેખર તમારો ટ્રેન્ડ ઇતિહાસ સાફ કરવા માંગો છો?",
     hospitalFinderTitle: "સ્થાનિક તબીબી સુવિધા શોધક",
-    hospitalFinderDesc: "ત્વરિત સારવારની જરૂર છે? અમે તમારા ઉપકરણના સ્થાનના આધારે નજીકની હોસ્પિટલો અને ક્લિનિક્સ માટે જાહેર ઓપનસ્ટ્રીટમેપ ડેટા ચકાસી શકીએ છીએ.",
+    hospitalFinderDesc: "તાત્કાલિક સારવારની જરૂર છે? અમે તમારા ઉપકરણના સ્થાનના આધારે નજીકની હોસ્પિટલો અને ક્લિનિક્સ માટે સાર્વજનિક રૂપે ઉપલબ્ધ ઓપનસ્ટ્રીટમેપ ડેટા ચકાસી શકીએ છીએ.",
     findFacilities: "નજીકની હોસ્પિટલો અને ક્લિનિક્સ શોધો",
-    locating: "સ્થાન શોધી રહ્યાં છીએ...",
-    searchingFacilities: "ઓવરપાસ રજિસ્ટ્રીમાં શોધી રહ્યાં છીએ...",
-    noFacilitiesFound: "તમારા સ્થાનના 5 કિમીની અંદર કોઈ હોસ્પિટલ કે ક્લિનિક મળ્યા નથી.",
-    navigate: "દિશા-નિર્દેશો",
+    locating: "સ્થાન શોધી રહ્યું છે...",
+    searchingFacilities: "ઓવરપાસ રજિસ્ટ્રી શોધી રહ્યું છે...",
+    noFacilitiesFound: "તમારા સ્થાનના 5 કિમીની અંદર કોઈ ક્લિનિક અથવા હોસ્પિટલ મળી નથી.",
+    navigate: "દિશાઓ",
     safetyNoticeTitle: "કટોકટી અસ્વીકરણ:",
-    safetyNoticeDesc: "આ સાધન નકશા ડેટાનો ઉપયોગ કરે છે અને તે સક્રિય કટોકટી રજિસ્ટ્રી નથી. જો તમે ગંભીર કટોકટીમાં હોવ, તો કૃપા કરીને દિશા-નિર્દેશો શોધવાને બદલે સીધા જ તમારી ઇમરજન્સી સેવાઓ (જેમ કે 108 / 112) ને કૉલ કરો.",
+    safetyNoticeDesc: "આ સાધન ક્રાઉડ-સોર્સ મેપ ડેટાનો ઉપયોગ કરે છે અને કોઈ સક્રિય કટોકટી રજિસ્ટ્રી નથી. જો તમે જીવન માટે જોખમી કટોકટીનો સામનો કરી રહ્યાં છો, તો કૃપા કરીને દિશાઓ શોધવાને બદલે સીધી તમારી કટોકટી સેવાઓ (જેમ કે 911 / 112) ને કૉલ કરો.",
     vitalsSubmitted: "વાઇટલ્સ સફળતાપૂર્વક સબમિટ થયા.",
-    aiSpeaking: "પ્રતિસાદ મોટેથી વાંચી રહ્યા છીએ...",
+    aiSpeaking: "જવાબ મોટેથી વાંચી રહ્યો છે...",
     loadingText: "ટ્રાયેજ વિશ્લેષણ ચાલુ છે...",
     clearConfirm: "શું તમે ખરેખર આ વાતચીત સાફ કરવા માંગો છો?",
-    homeTitle: "તમારો એઆઈ આરોગ્ય સાથી",
-    homeDesc: "તમારા લક્ષણોનું વર્ણન કરો અથવા તબીબી પ્રશ્નો પૂછો. તમે તમારી ચિંતાઓ ટાઇપ કરી શકો છો, માઇક્રોફોન બટનનો ઉપયોગ કરી શકો છો અથવા લક્ષણનો ફોટો અપલોડ કરી શકો છો (દા.ત. ચામડીના લાલ ચામઠા અથવા નાની ઈજા).",
-    homeSuggestion1: "મને માથું દુખે છે અને સહેજ તાવ છે",
-    homeSuggestion1Label: "\"મને માથું દુખે છે અને તાવ છે\"",
-    homeSuggestion2: "મારી છાતી ભારે લાગે છે અને શ્વાસ લેવામાં તકલીફ થાય છે",
-    homeSuggestion2Label: "\"છાતીમાં અકડામણ અને શ્વાસ ચડવો\"",
-    disclaimer: "અસ્વીકરણ: હેલ્થકમ્પેનિયન માત્ર એક શૈક્ષણિક સાધન છે. તે તબીબી નિદાન, સારવારની સલાહ કે પ્રિસ્ક્રિપ્શન પ્રદાન કરતું નથી. કોઈપણ સ્વાસ્થ્ય સમસ્યા માટે અથવા તબીબી નિર્ણયો લેતા પહેલા હંમેશા લાઇસન્સ પ્રાપ્ત ડૉક્ટરની સલાહ લો. જો તમે કટોકટીનો સામનો કરી રહ્યા હોવ, તો તરત જ તમારી સ્થાનિક કટોકટી સેવાઓ (108/112) નો સંપર્ક કરો.",
-    pdfHeading: "હૅલ્થકમ્પેનિયન — વાતચીતનો સારાંશ",
+    homeTitle: "તમારો એઆઈ હેલ્થ સાથી",
+    homeDesc: "તમારા લક્ષણોનું વર્ણન કરો અથવા તબીબી પ્રશ્નો પૂછો. તમે ટાઇપ કરી શકો છો, માઇક્રોફોનનો ઉપયોગ કરી શકો છો અથવા લક્ષણનો ફોટો અપલોડ કરી શકો છો (દા.ત., ત્વચા પર ફોલ્લીઓ અથવા નાની ઈજા).",
+    homeSuggestion1: "મને સામાન્ય માથાનો દુખાવો અને થોડો તાવ છે",
+    homeSuggestion1Label: "\"સામાન્ય માથાનો દુખાવો અને તાવ\"",
+    homeSuggestion2: "મારી છાતી જકડાઈ ગઈ છે અને શ્વાસ લેવામાં તકલીફ છે",
+    homeSuggestion2Label: "\"છાતીમાં જકડામણ અને શ્વાસની તકલીફ\"",
+    disclaimer: "અસ્વીકરણ: હેલ્થકમ્પેનિયન માત્ર એક શૈક્ષણિક સાધન છે. તે તબીબી નિદાન, સારવારની સલાહ અથવા પ્રિસ્ક્રિપ્શન આપતું નથી. કોઈ પણ સ્વાસ્થ્ય ચિંતા માટે અથવા તબીબી નિર્ણયો લેતા પહેલા હંમેશા લાઇસન્સ પ્રાપ્ત આરોગ્ય વ્યાવસાયિકની સલાહ લો. જો તમે કટોકટીનો સામનો કરી રહ્યા હોવ, તો તરત જ તમારા સ્થાનિક કટોકટી સેવાઓ (911/112) નો સંપર્ક કરો.",
+    pdfHeading: "હેલ્થકમ્પેનિયન — વાતચીતનો સારાંશ",
     pdfGenerated: "જનરેટ તારીખ:",
     pdfPage: "પૃષ્ઠ",
     potentialCauses: "સંભવિત કારણો:",
-    redFlagsTitle: "ધ્યાન આપવાના ચેતવણી ચિહ્નો:",
+    redFlagsTitle: "ચેતવણી ચિહ્નો જેના પર ધ્યાન આપવું:",
     recommendedActionLabel: "ભલામણ કરેલ પગલાં:",
 
     // Vision and Emergency additions
-    imageDisclaimer: "છબી વિશ્લેષણ ફક્ત સામાન્ય માર્ગદર્શન માટે છે - કોઈ તબીબી નિદાન નથી. ફોટો અથવા ઇજાનો ફોટો રૂબરૂ તપાસનું સ્થાન લઈ શકતો નથી.",
-    invalidFormat: "અમાન્ય ફાઇલ ફોર્મેટ. કૃપા કરીને જેપીજી અથવા પીએનજી છબી અપલોડ કરો.",
-    imageTooLarge: "છબીનું કદ 5MB ની મર્યાદા કરતાં વધી ગયું છે. કૃપા કરીને નાની છબી અપલોડ કરો.",
+    imageDisclaimer: "છબી વિશ્લેષણ સામાન્ય માર્ગદર્શન માટે જ છે — કોઈ તબીબી નિદાન નથી. ફોલ્લીઓ અથવા ઈજાનો ફોટો રૂબરૂ તપાસનું સ્થાન લઈ શકતો નથી.",
+    invalidFormat: "અમાન્ય ફાઇલ ફોર્મેટ. કૃપા કરીને JPG અથવા PNG છબી અપલોડ કરો.",
+    imageTooLarge: "છબીનું કદ 20MB ની મર્યાદા કરતાં વધી ગયું છે. કૃપા કરીને નાની છબી અપલોડ કરો.",
     emergencyAlertTitle: "ગંભીર કટોકટી મળી",
     emergencyAlertSubtitle: "તાત્કાલિક તબીબી ધ્યાન આપવાની ભલામણ કરવામાં આવે છે।",
     callEmergency: "ઇમરજન્સી સેવાઓને કૉલ કરો",
@@ -275,7 +275,7 @@ function App() {
   // Vision image upload state (base64 string)
   const [image, setImage] = useState(null);
 
-  // App view toggle: 'chat' or 'trends'
+  // App view toggle: 'chat', 'trends', or 'analytics'
   const [view, setView] = useState('chat');
 
   // Selected Language: 'en', 'hi', or 'gu'
@@ -310,14 +310,6 @@ function App() {
 
   const messagesEndRef = useRef(null);
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
-
-  // Initial load skeleton
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Listen to Supabase Auth Changes
   useEffect(() => {
@@ -673,7 +665,6 @@ function App() {
   };
 
   const handleSend = (e) => {
-    e.preventDefault();
     sendMessage(input);
     setInput('');
   };
@@ -918,18 +909,20 @@ function App() {
   }
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-tr from-blue-50 via-indigo-50 to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-between p-4 md:p-6 font-sans transition-colors duration-300 overflow-hidden">
+    <div className="h-[100dvh] bg-gradient-to-tr from-health-bg via-slate-50 to-health-bg/90 dark:from-health-bg-dark dark:via-slate-900 dark:to-health-bg-dark/95 flex flex-col items-center justify-between p-4 md:p-6 font-sans transition-colors duration-300 overflow-hidden">
       
       {/* Header */}
-      <header className="w-full max-w-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-md border border-white/50 dark:border-slate-800 p-4 mb-4 space-y-3">
+      <header className="w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-md border border-health-secondary/20 dark:border-slate-800 p-4 mb-4 space-y-3">
         {/* Row 1: Brand Info & Profile/Language */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="HealthCompanion Logo" className="w-9 h-9 object-contain rounded-xl border border-gray-105 dark:border-slate-700 shadow-sm" />
+            <div className="w-9 h-9 bg-health-primary/10 dark:bg-health-primary/20 rounded-xl flex items-center justify-center text-xl shadow-inner">
+              🩺
+            </div>
             <div>
-              <h1 className="text-base font-extrabold text-gray-800 dark:text-gray-100 tracking-tight leading-none">{t.appTitle}</h1>
-              <p className="text-[10px] text-green-600 dark:text-green-400 font-semibold flex items-center gap-1 mt-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse"></span>
+              <h1 className="text-base font-serif font-bold text-health-primary dark:text-health-secondary tracking-tight leading-none">{t.appTitle}</h1>
+              <p className="text-[10px] text-health-success dark:text-health-success/80 font-bold flex items-center gap-1 mt-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-health-success inline-block animate-pulse"></span>
                 {t.onlineStatus}
               </p>
             </div>
@@ -938,8 +931,8 @@ function App() {
           <div className="flex items-center gap-2">
             {/* User Profile Info & Log out */}
             {user ? (
-              <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-gray-200/50 dark:border-slate-700">
-                <span className="text-[10px] text-gray-650 dark:text-gray-300 font-bold max-w-[120px] truncate" title={user.email}>
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/50 dark:border-slate-700">
+                <span className="text-[10px] text-slate-600 dark:text-slate-350 font-bold max-w-[120px] truncate" title={user.email}>
                   👤 {user.email}
                 </span>
                 <button
@@ -951,7 +944,7 @@ function App() {
                       localStorage.removeItem('healthcompanion_chat_history');
                     }
                   }}
-                  className="text-[10px] text-red-650 hover:text-red-750 font-bold ml-1.5 transition"
+                  className="text-[10px] text-health-emergency hover:text-health-emergency/80 font-bold ml-1.5 transition"
                 >
                   Log Out
                 </button>
@@ -962,20 +955,20 @@ function App() {
                   setAuthSkipped(false);
                   localStorage.removeItem('healthcompanion_auth_skipped');
                 }}
-                className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-2.5 py-1.5 rounded-lg shadow-sm transition"
+                className="text-[10px] bg-health-primary hover:bg-health-primary/90 text-white font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition font-serif"
               >
                 Sign In
               </button>
             )}
 
             {/* Language Selector */}
-            <div className="flex items-center bg-gray-105 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-205/50 dark:border-slate-700">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-205/50 dark:border-slate-700">
               <button
                 onClick={() => handleLanguageChange('en')}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition ${
                   language === 'en'
-                    ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                    ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
                 }`}
               >
                 EN
@@ -984,8 +977,8 @@ function App() {
                 onClick={() => handleLanguageChange('hi')}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition ${
                   language === 'hi'
-                    ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                    ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
                 }`}
               >
                 हिन्दी
@@ -994,8 +987,8 @@ function App() {
                 onClick={() => handleLanguageChange('gu')}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition ${
                   language === 'gu'
-                    ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                    ? 'bg-white dark:bg-slate-700 text-health-primary dark:text-health-secondary shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-405'
                 }`}
               >
                 ગુજરાતી
@@ -1005,38 +998,38 @@ function App() {
         </div>
 
         {/* Divider */}
-        <hr className="border-gray-150 dark:border-slate-800" />
+        <hr className="border-slate-150 dark:border-slate-800" />
 
         {/* Row 2: Navigation Tab & Actions Group */}
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           {/* Left Side: View Toggle (Pill Shape) */}
-          <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-1 rounded-full border border-gray-200/50 dark:border-slate-700 shadow-inner">
+          <div className="flex items-center bg-slate-105 dark:bg-slate-800 p-1 rounded-full border border-slate-200/50 dark:border-slate-700 shadow-inner">
             <button
               onClick={() => setView('chat')}
-              className={`px-4 py-1.5 text-[10px] md:text-xs font-extrabold rounded-full transition-all duration-200 ${
+              className={`px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 ${
                 view === 'chat'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm scale-105'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                  ? 'bg-health-primary text-white shadow-sm scale-105'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
               }`}
             >
               {t.chatTab}
             </button>
             <button
               onClick={() => setView('trends')}
-              className={`px-4 py-1.5 text-[10px] md:text-xs font-extrabold rounded-full transition-all duration-200 ${
+              className={`px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 ${
                 view === 'trends'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm scale-105'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                  ? 'bg-health-primary text-white shadow-sm scale-105'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
               }`}
             >
               {t.trendsTab}
             </button>
             <button
               onClick={() => setView('analytics')}
-              className={`px-4 py-1.5 text-[10px] md:text-xs font-extrabold rounded-full transition-all duration-200 ${
+              className={`px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full transition-all duration-200 ${
                 view === 'analytics'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm scale-105'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
+                  ? 'bg-health-primary text-white shadow-sm scale-105'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
               }`}
             >
               {t.analyticsTab}
@@ -1053,7 +1046,7 @@ function App() {
             )}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 border border-gray-200/50 dark:border-slate-700 rounded-lg shadow-sm transition-all duration-200 z-50 relative"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] md:text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/50 dark:border-slate-700 rounded-xl shadow-sm transition-all duration-200 z-50 relative"
               title="Open settings and tools menu"
             >
               <span>⚙️ {language === 'hi' ? 'विकल्प' : language === 'gu' ? 'વિકલ્પો' : 'Options'}</span>
@@ -1061,14 +1054,14 @@ function App() {
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-150 dark:border-slate-800 py-1.5 z-50 flex flex-col transition-all duration-200">
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-150 dark:border-slate-800 py-1.5 z-50 flex flex-col transition-all duration-200">
                 {/* Theme Toggle */}
                 <button
                   onClick={() => {
                     setTheme(prev => prev === 'light' ? 'dark' : 'light');
                     setIsMenuOpen(false);
                   }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
                 >
                   <span className="text-sm">{theme === 'light' ? "🌙" : "☀️"}</span>
                   <span>{theme === 'light' ? (language === 'hi' ? 'डार्क मोड' : language === 'gu' ? 'ડાર્ક મોડ' : 'Dark Mode') : (language === 'hi' ? 'लाइट मोड' : language === 'gu' ? 'લાઇટ મોડ' : 'Light Mode')}</span>
@@ -1080,7 +1073,7 @@ function App() {
                     setIsMuted(prev => !prev);
                     setIsMenuOpen(false);
                   }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
                 >
                   <span className="text-sm">{isMuted ? "🔊" : "🔇"}</span>
                   <span>{isMuted ? (language === 'hi' ? 'आवाज़ चालू करें' : language === 'gu' ? 'અવાજ ચાલુ કરો' : 'Unmute Voice') : (language === 'hi' ? 'आवाज़ बंद करें' : language === 'gu' ? 'અવાજ બંધ કરો' : 'Mute Voice')}</span>
@@ -1089,13 +1082,13 @@ function App() {
                 {/* Export Chat PDF */}
                 {messages.length > 0 && view === 'chat' && (
                   <>
-                    <hr className="border-gray-100 dark:border-slate-800 my-1" />
+                    <hr className="border-slate-100 dark:border-slate-800 my-1" />
                     <button
                       onClick={() => {
                         exportToPDF();
                         setIsMenuOpen(false);
                       }}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
                     >
                       <span className="text-sm">📄</span>
                       <span>{t.pdfButton} {language === 'hi' ? 'डाउनलोड करें' : language === 'gu' ? 'ડાઉનલોડ કરો' : 'Export'}</span>
@@ -1110,7 +1103,7 @@ function App() {
                       handleGenerateDoctorSummary();
                       setIsMenuOpen(false);
                     }}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
                   >
                     <span className="text-sm">🩺</span>
                     <span>{t.doctorSummaryBtn} (PDF)</span>
@@ -1124,7 +1117,7 @@ function App() {
                       handleCopyDoctorSummary();
                       setIsMenuOpen(false);
                     }}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition font-semibold"
                   >
                     <span className="text-sm">📋</span>
                     <span>{t.copySummaryBtn}</span>
@@ -1134,13 +1127,13 @@ function App() {
                 {/* Clear Chat */}
                 {messages.length > 0 && view === 'chat' && (
                   <>
-                    <hr className="border-gray-100 dark:border-slate-800 my-1" />
+                    <hr className="border-slate-100 dark:border-slate-800 my-1" />
                     <button
                       onClick={() => {
                         clearChat();
                         setIsMenuOpen(false);
                       }}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-955/20 text-left transition font-extrabold"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-health-emergency hover:bg-red-50 dark:hover:bg-red-955/20 text-left transition font-extrabold"
                     >
                       <span className="text-sm">🗑️</span>
                       <span>{t.clearButton}</span>
@@ -1155,14 +1148,14 @@ function App() {
 
       {/* Connection Error Banner */}
       {errorBanner && (
-        <div className="w-full max-w-2xl bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-800/55 text-red-700 dark:text-red-400 px-4 py-2.5 rounded-xl flex items-center justify-between mb-4 text-xs font-semibold shadow-sm">
+        <div className="w-full max-w-2xl bg-health-emergency/10 border border-health-emergency/30 text-health-emergency px-4 py-2.5 rounded-xl flex items-center justify-between mb-4 text-xs font-semibold shadow-sm animate-fade-in">
           <div className="flex items-center gap-2">
             <span>⚠️</span>
             <span>{errorBanner}</span>
           </div>
           <button 
             onClick={() => setErrorBanner(null)} 
-            className="text-red-500 hover:text-red-700 font-bold ml-2 text-sm focus:outline-none"
+            className="text-health-emergency hover:opacity-80 font-bold ml-2 text-sm focus:outline-none"
           >
             ✕
           </button>
@@ -1170,7 +1163,7 @@ function App() {
       )}
 
       {/* Main View Container */}
-      <main className="w-full max-w-2xl flex-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 dark:border-slate-800 flex flex-col overflow-hidden mb-4 min-h-0">
+      <main className="w-full max-w-2xl flex-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-lg border border-slate-250/20 dark:border-slate-800 flex flex-col overflow-hidden mb-4 min-h-0">
         {view === 'trends' ? (
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <SymptomTrends user={user} supabase={supabase} language={language} translations={TRANSLATIONS} />
@@ -1184,25 +1177,25 @@ function App() {
             {/* Messages list */}
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-3xl mb-4 animate-bounce">
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 animate-fade-in">
+                  <div className="w-16 h-16 bg-health-primary/10 dark:bg-health-primary/20 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner">
                     💬
                   </div>
-                  <h2 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-1">{t.homeTitle}</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
+                  <h2 className="text-lg font-serif font-bold text-slate-800 dark:text-slate-200 mb-1">{t.homeTitle}</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
                     {t.homeDesc}
                   </p>
                   
                   <div className="mt-6 flex flex-wrap justify-center gap-2">
                     <button 
                       onClick={() => setInput(t.homeSuggestion1)} 
-                      className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 px-3.5 py-2 rounded-full transition font-medium border border-blue-100 dark:border-blue-900/50"
+                      className="text-xs bg-health-primary/5 dark:bg-health-primary/10 text-health-primary dark:text-health-secondary hover:bg-health-primary/10 dark:hover:bg-health-primary/20 px-3.5 py-2 rounded-full transition font-bold border border-health-primary/20 dark:border-health-primary/30"
                     >
                       {t.homeSuggestion1Label}
                     </button>
                     <button 
                       onClick={() => setInput(t.homeSuggestion2)} 
-                      className="text-xs bg-red-50 dark:bg-red-955/30 text-red-655 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 px-3.5 py-2 rounded-full transition font-medium border border-red-100 dark:border-red-900/50"
+                      className="text-xs bg-health-emergency/5 dark:bg-health-emergency/10 text-health-emergency hover:bg-health-emergency/10 dark:hover:bg-health-emergency/20 px-3.5 py-2 rounded-full transition font-bold border border-health-emergency/20 dark:border-health-emergency/30"
                     >
                       {t.homeSuggestion2Label}
                     </button>
@@ -1222,11 +1215,11 @@ function App() {
 
               {/* Loading Indicator */}
               {isLoading && (
-                <div className="flex justify-start my-2">
-                  <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2.5 h-2.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2.5 h-2.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                <div className="flex justify-start my-2 animate-pulse">
+                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-2.5 h-2.5 bg-health-primary dark:bg-health-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                   </div>
                 </div>
               )}
@@ -1235,140 +1228,35 @@ function App() {
 
             {/* Symptom Quick-Tap Chips */}
             {messages.length === 0 && (
-              <div className="px-6 py-3.5 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/30">
+              <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
                 <SymptomChips onTapChip={handleTapChip} />
               </div>
             )}
 
-            {/* Collapsible Vitals Panel */}
-            <div className="w-full border-t border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/40 p-4">
-              <button
-                type="button"
-                onClick={() => setIsVitalsOpen(!isVitalsOpen)}
-                className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
-              >
-                <span>{isVitalsOpen ? "▼" : "▶"} {t.vitalsSubtitle}</span>
-              </button>
-              {isVitalsOpen && (
-                <div className="grid grid-cols-3 gap-3 mt-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                      {t.temperature}
-                    </label>
-                    <input
-                      type="text"
-                      value={vitals.temperature}
-                      onChange={(e) => setVitals(prev => ({ ...prev, temperature: e.target.value }))}
-                      placeholder={t.tempPlaceholder}
-                      className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                      {t.bloodPressure}
-                    </label>
-                    <input
-                      type="text"
-                      value={vitals.bloodPressure}
-                      onChange={(e) => setVitals(prev => ({ ...prev, bloodPressure: e.target.value }))}
-                      placeholder={t.bpPlaceholder}
-                      className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                      {t.pulse}
-                    </label>
-                    <input
-                      type="text"
-                      value={vitals.pulse}
-                      onChange={(e) => setVitals(prev => ({ ...prev, pulse: e.target.value }))}
-                      placeholder={t.pulsePlaceholder}
-                      className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Image Thumbnail Preview Block */}
-            {image && (
-              <div className="px-6 py-3 bg-gray-50/90 dark:bg-slate-900/60 border-t border-gray-150 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-3 relative w-full">
-                  <div className="relative flex-shrink-0">
-                    <img
-                      src={image}
-                      alt="Symptom preview"
-                      className="w-14 h-14 object-cover rounded-lg border border-gray-300 dark:border-slate-700 shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setImage(null)}
-                      className="absolute -top-1.5 -right-1.5 bg-red-650 hover:bg-red-750 text-white rounded-full p-0.5 text-[9px] shadow-sm w-4 h-4 flex items-center justify-center font-bold"
-                      title="Remove image"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 italic leading-normal pr-4">
-                    {t.imageDisclaimer}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Input Form */}
-            <form onSubmit={handleSend} className="bg-white/95 dark:bg-slate-900/95 border-t border-gray-150 dark:border-slate-800 p-4 flex items-center gap-3">
-              <VoiceButton 
-                onTranscript={handleTranscript}
-                disabled={isLoading}
-                language={language}
-              />
-
-              {/* Image Upload Button */}
-              <label 
-                className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-gray-400 dark:hover:text-gray-200 rounded-xl cursor-pointer transition flex items-center justify-center" 
-                title="Upload diagnostic photo (JPG/PNG)"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/jpg"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  disabled={isLoading}
-                />
-              </label>
-
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={isLoading}
-                placeholder={t.inputPlaceholder}
-                className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-855 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
-              />
-
-              <button
-                type="submit"
-                disabled={(!input.trim() && !image) || isLoading}
-                className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                </svg>
-              </button>
-            </form>
+            {/* Modularized Chat Input & Vitals Panel */}
+            <ChatInput
+              input={input}
+              setInput={setInput}
+              image={image}
+              setImage={setImage}
+              vitals={vitals}
+              setVitals={setVitals}
+              isVitalsOpen={isVitalsOpen}
+              setIsVitalsOpen={setIsVitalsOpen}
+              isLoading={isLoading}
+              language={language}
+              translations={TRANSLATIONS}
+              handleSend={handleSend}
+              handleImageUpload={handleImageUpload}
+              handleTranscript={handleTranscript}
+            />
           </>
         )}
       </main>
 
       {/* Disclaimer */}
       <footer className="w-full max-w-2xl text-center px-4 py-1 shrink-0">
-        <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+        <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
           {t.disclaimer}
         </p>
       </footer>

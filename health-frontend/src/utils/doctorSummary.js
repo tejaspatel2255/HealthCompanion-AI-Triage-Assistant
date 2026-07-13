@@ -2,7 +2,6 @@ import { jsPDF } from 'jspdf';
 
 // Helper to aggregate structured data from the conversation history
 export const compileDoctorSummaryData = (messages, language, translations) => {
-  const t = translations[language] || translations['en'];
   const userMessages = messages.filter(m => m.sender === 'user');
   const assistantMessages = messages.filter(m => m.sender === 'assistant');
 

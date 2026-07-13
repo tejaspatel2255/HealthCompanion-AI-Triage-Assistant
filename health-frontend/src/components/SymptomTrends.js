@@ -77,9 +77,9 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
 
   const getSeverityColor = (sev) => {
     const s = sev ? sev.toLowerCase() : '';
-    if (s.includes('emergency')) return 'text-red-500 bg-red-100 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900/30';
-    if (s.includes('doctor')) return 'text-amber-600 bg-amber-100 dark:bg-amber-955/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/30';
-    return 'text-green-600 bg-green-100 dark:bg-green-950/40 dark:text-green-400 border border-green-200 dark:border-green-900/30';
+    if (s.includes('emergency')) return 'text-health-emergency bg-health-emergency/10 dark:bg-health-emergency/15 border border-health-emergency/35';
+    if (s.includes('doctor')) return 'text-health-caution bg-health-caution/10 dark:bg-health-caution/15 border border-health-caution/35';
+    return 'text-health-success bg-health-success/10 dark:bg-health-success/15 border border-health-success/35';
   };
 
   const width = 600;
@@ -127,17 +127,17 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
-        <span className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
-        <p className="text-xs text-slate-500 dark:text-slate-405 mt-2">Loading trends history...</p>
+        <span className="w-8 h-8 border-4 border-health-primary border-t-transparent rounded-full animate-spin"></span>
+        <p className="text-xs text-slate-500 dark:text-slate-450 mt-2">Loading trends history...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/40 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white font-serif">
             {t.trendsTitle || "Symptom Severity Trends"}
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -147,7 +147,7 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
         {totalCount > 0 && (
           <button
             onClick={handleClearLogs}
-            className="px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-xl transition duration-200"
+            className="px-4 py-2 text-xs font-serif font-bold text-health-emergency hover:bg-health-emergency/10 border border-health-emergency/30 rounded-xl transition duration-200"
           >
             {t.clearHistory || "Clear History"}
           </button>
@@ -155,13 +155,13 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
       </div>
 
       {totalCount === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center bg-white/50 dark:bg-slate-900/40 backdrop-blur-sm rounded-2xl border border-gray-150 dark:border-slate-800/80">
-          <div className="w-16 h-16 bg-blue-50 dark:bg-slate-800 text-blue-500 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 shadow-inner">
+        <div className="flex flex-col items-center justify-center p-12 text-center bg-white/50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/80">
+          <div className="w-16 h-16 bg-health-primary/10 dark:bg-slate-800 text-health-primary dark:text-health-secondary rounded-full flex items-center justify-center mb-4 shadow-inner">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h3 className="text-base font-bold text-slate-800 dark:text-white">
+          <h3 className="text-base font-bold text-slate-800 dark:text-white font-serif">
             {t.noHistoryTitle || "No Symptom History Yet"}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-sm">
@@ -171,27 +171,27 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm text-center">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t.totalTriages || "Total Triages"}</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{totalCount}</p>
+            <div className="bg-white/80 dark:bg-slate-900/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-450">{t.totalTriages || "Total Triages"}</p>
+              <p className="text-2xl font-bold text-health-primary dark:text-health-secondary mt-1 font-mono">{totalCount}</p>
             </div>
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm text-center">
-              <p className="text-xs font-semibold text-green-600 dark:text-green-400">{t.selfCare || "Self-Care"}</p>
-              <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">{selfCareCount}</p>
+            <div className="bg-white/80 dark:bg-slate-900/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+              <p className="text-xs font-bold text-health-success">{t.selfCare || "Self-Care"}</p>
+              <p className="text-2xl font-bold text-health-success mt-1 font-mono">{selfCareCount}</p>
             </div>
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm text-center">
-              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">{t.seeDoctor || "See Doctor"}</p>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">{doctorCount}</p>
+            <div className="bg-white/80 dark:bg-slate-900/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+              <p className="text-xs font-bold text-health-caution">{t.seeDoctor || "See Doctor"}</p>
+              <p className="text-2xl font-bold text-health-caution mt-1 font-mono">{doctorCount}</p>
             </div>
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm text-center">
-              <p className="text-xs font-semibold text-red-600 dark:text-red-400">{t.emergency || "Emergency"}</p>
-              <p className="text-2xl font-bold text-red-700 dark:text-red-400 mt-1">{emergencyCount}</p>
+            <div className="bg-white/80 dark:bg-slate-900/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+              <p className="text-xs font-bold text-health-emergency">{t.emergency || "Emergency"}</p>
+              <p className="text-2xl font-bold text-health-emergency mt-1 font-mono">{emergencyCount}</p>
             </div>
           </div>
 
-          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md p-5 rounded-2xl border border-white/30 dark:border-slate-800 shadow-md">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></span>
+          <div className="bg-white/95 dark:bg-slate-900/95 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-1.5 font-serif">
+              <span className="w-2.5 h-2.5 bg-health-primary rounded-full animate-pulse"></span>
               {t.severityTimeline || "Severity Timeline"}
             </h3>
 
@@ -210,19 +210,19 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
                   <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
                     <defs>
                       <linearGradient id="chart-area-grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.00" />
+                        <stop offset="0%" stopColor="#2D6A5F" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#2D6A5F" stopOpacity="0.00" />
                       </linearGradient>
                     </defs>
                     
                     <line x1={padding} y1={padding} x2={width-padding} y2={padding} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="3 3" className="stroke-slate-300 dark:stroke-slate-700" />
-                    <text x={padding - 8} y={padding + 3} textAnchor="end" className="text-[9px] fill-red-500 font-bold">EMERGENCY</text>
+                    <text x={padding - 8} y={padding + 3} textAnchor="end" className="text-[9px] fill-health-emergency font-bold font-sans">EMERGENCY</text>
 
-                    <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="3 3" className="stroke-slate-300 dark:stroke-slate-700" />
-                    <text x={padding - 8} y={height/2 + 3} textAnchor="end" className="text-[9px] fill-amber-500 font-bold">DOCTOR</text>
+                    <line x1={height/2} y1={height/2} x2={width-padding} y2={height/2} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="3 3" className="stroke-slate-300 dark:stroke-slate-700" />
+                    <text x={padding - 8} y={height/2 + 3} textAnchor="end" className="text-[9px] fill-health-caution font-bold font-sans">DOCTOR</text>
 
                     <line x1={padding} y1={height-padding} x2={width-padding} y2={height-padding} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="3 3" className="stroke-slate-300 dark:stroke-slate-700" />
-                    <text x={padding - 8} y={height-padding + 3} textAnchor="end" className="text-[9px] fill-green-500 font-bold">SELF-CARE</text>
+                    <text x={padding - 8} y={height-padding + 3} textAnchor="end" className="text-[9px] fill-health-success font-bold font-sans">SELF-CARE</text>
 
                     {areaPoints && (
                       <polygon points={areaPoints} fill="url(#chart-area-grad)" />
@@ -231,7 +231,7 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
                     {points && (
                       <polyline
                         fill="none"
-                        stroke="#3b82f6"
+                        stroke="#2D6A5F"
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -254,7 +254,7 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
                             cx={cx}
                             cy={cy}
                             r="5"
-                            className="fill-blue-600 dark:fill-blue-400 stroke-white dark:stroke-slate-900 stroke-[2] transition-all group-hover:r-7"
+                            className="fill-health-primary dark:fill-health-secondary stroke-white dark:stroke-slate-900 stroke-[2] transition-all group-hover:r-7"
                           />
                           <title>{`Date: ${d.date}\nSeverity: ${d.y === 3 ? "Emergency" : d.y === 2 ? "See Doctor" : "Self-care"}\nCause: ${d.cause}`}</title>
                         </g>
@@ -266,13 +266,13 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
             </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-gray-105 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/20">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-in">
+            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider font-serif">
                 {t.recentLogs || "Recent Logs"}
               </h4>
             </div>
-            <div className="divide-y divide-gray-150 dark:divide-slate-800/85">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/85">
               {logs.map((log, index) => (
                 <div key={index} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
                   <div>
@@ -285,7 +285,7 @@ const SymptomTrends = ({ user, supabase, language, translations }) => {
                         : 'Symptom Triage'}
                     </p>
                   </div>
-                  <span className={`px-2.5 py-1 text-xs font-semibold rounded-full self-start sm:self-center ${getSeverityColor(log.severity)}`}>
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full self-start sm:self-center ${getSeverityColor(log.severity)}`}>
                     {log.severity}
                   </span>
                 </div>

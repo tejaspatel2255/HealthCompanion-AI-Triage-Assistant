@@ -17,26 +17,26 @@ const EmergencySOS = ({ API_URL, language, translations }) => {
   };
 
   return (
-    <div className="mt-4 p-5 bg-red-500/10 dark:bg-red-500/15 border-2 border-red-500 rounded-2xl shadow-lg space-y-4 animate-pulse-slow">
+    <div className="mt-4 p-5 bg-health-emergency/10 dark:bg-health-emergency/15 border-2 border-health-emergency rounded-2xl shadow-lg space-y-4">
       {/* Alert Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white animate-bounce shadow-md">
+        <div className="w-10 h-10 bg-health-emergency rounded-full flex items-center justify-center text-white animate-bounce shadow-md">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
         <div>
-          <h4 className="text-base font-extrabold text-red-700 dark:text-red-400 uppercase tracking-wide">
+          <h4 className="text-base font-extrabold text-health-emergency uppercase tracking-wide">
             {t.emergencyAlertTitle || "CRITICAL EMERGENCY DETECTED"}
           </h4>
-          <p className="text-xs text-red-650 dark:text-red-300 font-medium">
+          <p className="text-xs text-health-emergency/90 dark:text-health-emergency/80 font-medium">
             {t.emergencyAlertSubtitle || "Immediate medical attention is recommended."}
           </p>
         </div>
       </div>
 
       {/* Main SOS Call Link */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-red-600/90 hover:bg-red-600 p-4 rounded-xl shadow-md transition duration-200">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-health-emergency hover:bg-health-emergency/90 p-4 rounded-xl shadow-md transition duration-200">
         <a
           href={`tel:${emergencyNumber}`}
           className="flex-1 text-center sm:text-left text-white font-extrabold text-lg flex items-center justify-center sm:justify-start gap-2.5"
@@ -57,7 +57,7 @@ const EmergencySOS = ({ API_URL, language, translations }) => {
               onBlur={() => setIsEditing(false)}
               onKeyDown={(e) => e.key === 'Enter' && setIsEditing(false)}
               autoFocus
-              className="px-2 py-0.5 text-xs text-red-950 font-bold bg-white rounded border border-transparent focus:outline-none w-16 text-center"
+              className="px-2 py-0.5 text-xs text-red-955 font-bold bg-white rounded border border-transparent focus:outline-none w-16 text-center"
             />
           ) : (
             <button
@@ -72,7 +72,7 @@ const EmergencySOS = ({ API_URL, language, translations }) => {
       </div>
 
       {/* Primary SOS Action Disclaimer */}
-      <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/30 text-xs text-red-700 dark:text-red-400 font-bold leading-relaxed shadow-sm">
+      <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-health-emergency/20 dark:border-health-emergency/30 text-xs text-health-emergency dark:text-health-emergency/90 font-bold leading-relaxed shadow-sm">
         🚨 <b>{t.safetyNoticeTitle || "Emergency Disclaimer:"}</b> {t.emergencyAlertDisclaimer || "If this is a real emergency, call emergency services now. Do not wait for further AI guidance."}
       </div>
 
