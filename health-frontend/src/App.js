@@ -307,6 +307,7 @@ function App() {
     pulse: ''
   });
   const [isVitalsOpen, setIsVitalsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
@@ -962,13 +963,13 @@ function App() {
 
         {/* Row 2: Navigation Tab & Actions Group */}
         <div className="flex flex-wrap items-center justify-between gap-2.5">
-          {/* Left Side: View Toggle */}
-          <div className="flex items-center bg-gray-105 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-205/50 dark:border-slate-700">
+          {/* Left Side: View Toggle (Pill Shape) */}
+          <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-1 rounded-full border border-gray-200/50 dark:border-slate-700 shadow-inner">
             <button
               onClick={() => setView('chat')}
-              className={`px-3.5 py-1 text-[10px] font-bold rounded transition ${
+              className={`px-4 py-1.5 text-[10px] md:text-xs font-extrabold rounded-full transition-all duration-200 ${
                 view === 'chat'
-                  ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm scale-105'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
               }`}
             >
@@ -976,9 +977,9 @@ function App() {
             </button>
             <button
               onClick={() => setView('trends')}
-              className={`px-3.5 py-1 text-[10px] font-bold rounded transition ${
+              className={`px-4 py-1.5 text-[10px] md:text-xs font-extrabold rounded-full transition-all duration-200 ${
                 view === 'trends'
-                  ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm scale-105'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
               }`}
             >
@@ -986,9 +987,9 @@ function App() {
             </button>
             <button
               onClick={() => setView('analytics')}
-              className={`px-3.5 py-1 text-[10px] font-bold rounded transition ${
+              className={`px-4 py-1.5 text-[10px] md:text-xs font-extrabold rounded-full transition-all duration-200 ${
                 view === 'analytics'
-                  ? 'bg-white dark:bg-slate-700 text-blue-650 dark:text-blue-400 shadow-sm'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm scale-105'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
               }`}
             >
@@ -996,88 +997,111 @@ function App() {
             </button>
           </div>
 
-          {/* Right Side: Action Utilities */}
-          <div className="flex items-center flex-wrap gap-1.5">
-            {/* Dark Mode */}
+          {/* Right Side: Action Utilities Dropdown Menu */}
+          <div className="relative">
+            {isMenuOpen && (
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsMenuOpen(false)} 
+              />
+            )}
             <button
-              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
-              className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg transition"
-              title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 border border-gray-200/50 dark:border-slate-700 rounded-lg shadow-sm transition-all duration-200 z-50 relative"
+              title="Open settings and tools menu"
             >
-              {theme === 'light' ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-                </svg>
-              )}
+              <span>⚙️ {language === 'hi' ? 'विकल्प' : language === 'gu' ? 'વિકલ્પો' : 'Options'}</span>
+              <span className="text-[8px] opacity-60">{isMenuOpen ? "▲" : "▼"}</span>
             </button>
 
-            {/* Mute/Unmute */}
-            <button
-              onClick={() => setIsMuted(prev => !prev)}
-              className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg transition"
-              title={isMuted ? "Unmute voice response" : "Mute voice response"}
-            >
-              {isMuted ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z" />
-                </svg>
-              )}
-            </button>
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-150 dark:border-slate-800 py-1.5 z-50 flex flex-col transition-all duration-200">
+                {/* Theme Toggle */}
+                <button
+                  onClick={() => {
+                    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                >
+                  <span className="text-sm">{theme === 'light' ? "🌙" : "☀️"}</span>
+                  <span>{theme === 'light' ? (language === 'hi' ? 'डार्क मोड' : language === 'gu' ? 'ડાર્ક મોડ' : 'Dark Mode') : (language === 'hi' ? 'लाइट मोड' : language === 'gu' ? 'લાઇટ મોડ' : 'Light Mode')}</span>
+                </button>
 
-            {/* Exporter PDF */}
-            {messages.length > 0 && view === 'chat' && (
-              <button
-                onClick={exportToPDF}
-                className="text-[10px] text-gray-650 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 px-2 py-1 rounded-md transition font-bold flex items-center gap-1"
-                title={t.pdfTitle}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                {t.pdfButton}
-              </button>
-            )}
+                {/* Mute/Unmute */}
+                <button
+                  onClick={() => {
+                    setIsMuted(prev => !prev);
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                >
+                  <span className="text-sm">{isMuted ? "🔊" : "🔇"}</span>
+                  <span>{isMuted ? (language === 'hi' ? 'आवाज़ चालू करें' : language === 'gu' ? 'અવાજ ચાલુ કરો' : 'Unmute Voice') : (language === 'hi' ? 'आवाज़ बंद करें' : language === 'gu' ? 'અવાજ બંધ કરો' : 'Mute Voice')}</span>
+                </button>
 
-            {/* Generate Doctor Summary (PDF) */}
-            {messages.length > 0 && view === 'chat' && (
-              <button
-                onClick={handleGenerateDoctorSummary}
-                className="text-[10px] bg-blue-50 text-blue-650 hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-750 px-2 py-1 rounded-md transition font-bold flex items-center gap-1"
-                title={t.doctorSummaryTitle}
-              >
-                🩺 {t.doctorSummaryBtn}
-              </button>
-            )}
+                {/* Export Chat PDF */}
+                {messages.length > 0 && view === 'chat' && (
+                  <>
+                    <hr className="border-gray-100 dark:border-slate-800 my-1" />
+                    <button
+                      onClick={() => {
+                        exportToPDF();
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                    >
+                      <span className="text-sm">📄</span>
+                      <span>{t.pdfButton} {language === 'hi' ? 'डाउनलोड करें' : language === 'gu' ? 'ડાઉનલોડ કરો' : 'Export'}</span>
+                    </button>
+                  </>
+                )}
 
-            {/* Copy Doctor Summary Text */}
-            {messages.length > 0 && view === 'chat' && (
-              <button
-                onClick={handleCopyDoctorSummary}
-                className="text-[10px] text-gray-650 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-25 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 px-2.5 py-1 rounded-md transition font-bold flex items-center gap-1"
-                title={t.copySummaryTitle}
-              >
-                📋 {t.copySummaryBtn}
-              </button>
-            )}
+                {/* Doctor PDF summary */}
+                {messages.length > 0 && view === 'chat' && (
+                  <button
+                    onClick={() => {
+                      handleGenerateDoctorSummary();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                  >
+                    <span className="text-sm">🩺</span>
+                    <span>{t.doctorSummaryBtn} (PDF)</span>
+                  </button>
+                )}
 
-            {/* Clear chat */}
-            {messages.length > 0 && view === 'chat' && (
-              <button
-                onClick={clearChat}
-                className="text-[10px] text-red-655 hover:text-red-750 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-955/20 px-2 py-1 rounded-md transition font-bold"
-                title={t.clearChatTitle}
-              >
-                {t.clearButton}
-              </button>
+                {/* Copy Doctor Text */}
+                {messages.length > 0 && view === 'chat' && (
+                  <button
+                    onClick={() => {
+                      handleCopyDoctorSummary();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 text-left transition font-semibold"
+                  >
+                    <span className="text-sm">📋</span>
+                    <span>{t.copySummaryBtn}</span>
+                  </button>
+                )}
+
+                {/* Clear Chat */}
+                {messages.length > 0 && view === 'chat' && (
+                  <>
+                    <hr className="border-gray-100 dark:border-slate-800 my-1" />
+                    <button
+                      onClick={() => {
+                        clearChat();
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-955/20 text-left transition font-extrabold"
+                    >
+                      <span className="text-sm">🗑️</span>
+                      <span>{t.clearButton}</span>
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
